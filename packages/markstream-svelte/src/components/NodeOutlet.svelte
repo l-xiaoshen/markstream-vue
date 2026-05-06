@@ -61,7 +61,7 @@
     indexKey = undefined,
   }: Props = $props()
 
-  let resolvedType = $derived(String((node as any)?.type || ''))
+  let resolvedType = $derived(String(node.type || ''))
   let customComponentMap = $derived(context?.customComponents || getCustomNodeComponents(context?.customId))
   let CustomComponent = $derived(resolveNodeOutletCustomComponent(node, context, customComponentMap))
   let customNode = $derived(coerceCustomHtmlNode(node))
@@ -69,12 +69,12 @@
   let codeMode = $derived(resolveNodeOutletCodeMode(node, context))
   let htmlTag = $derived(resolveHtmlTag(node))
   let shouldEscapeHtmlTag = $derived(resolveShouldEscapeHtmlTag())
-  let htmlRenderNode = $derived(coerceBuiltinHtmlNode(node, resolvedType))
-  let codeBlockInstanceKey = $derived(`${String(indexKey ?? 'code-block')}:${String((node as any)?.language ?? '')}:${(node as any)?.diff ? 'diff' : 'code'}`)
+  let htmlRenderNode = $derived(coerceBuiltinHtmlNode(node, resolvedType) as SvelteRenderableNode)
+  let codeBlockInstanceKey = $derived(`${String(indexKey ?? 'code-block')}:${String(node.language ?? '')}:${node.diff ? 'diff' : 'code'}`)
   let escapedTextNode = $derived({
     type: 'text',
-    content: String((node as any)?.content ?? (node as any)?.raw ?? ''),
-    raw: String((node as any)?.content ?? (node as any)?.raw ?? ''),
+    content: String(node.content ?? node.raw ?? ''),
+    raw: String(node.content ?? node.raw ?? ''),
   } as SvelteRenderableNode)
 
   function resolveShouldEscapeHtmlTag() {
@@ -90,7 +90,7 @@
       return false
     if (STANDARD_HTML_TAGS.has(htmlTag))
       return false
-    return !hasCompleteHtmlTagContent((node as any)?.content ?? (node as any)?.raw, htmlTag)
+    return !hasCompleteHtmlTagContent(node.content ?? node.raw, htmlTag)
   }
 </script>
 
@@ -105,93 +105,93 @@
     typewriter={context?.typewriter}
     {...customInputs}
   />
-{:else if resolvedType === 'text' || resolvedType === 'text_special'}
-  <TextNode {node} {context} {indexKey} typewriter={context?.typewriter} />
-{:else if resolvedType === 'paragraph'}
-  <ParagraphNode {node} {context} {indexKey} />
-{:else if resolvedType === 'heading'}
-  <HeadingNode {node} {context} {indexKey} />
-{:else if resolvedType === 'blockquote'}
-  <BlockquoteNode {node} {context} {indexKey} />
-{:else if resolvedType === 'list'}
-  <ListNode {node} {context} {indexKey} />
-{:else if resolvedType === 'list_item'}
-  <ListItemNode {node} {context} {indexKey} />
-{:else if resolvedType === 'table'}
-  <TableNode {node} {context} />
-{:else if resolvedType === 'definition_list'}
-  <DefinitionListNode {node} {context} />
-{:else if resolvedType === 'footnote'}
-  <FootnoteNode {node} {context} />
-{:else if resolvedType === 'footnote_reference'}
-  <FootnoteReferenceNode {node} />
-{:else if resolvedType === 'footnote_anchor'}
-  <FootnoteAnchorNode {node} />
-{:else if resolvedType === 'admonition'}
-  <AdmonitionNode {node} {context} />
-{:else if resolvedType === 'hardbreak'}
+{:else if node.type === 'text' || node.type === 'text_special'}
+  <TextNode node={node} {context} {indexKey} typewriter={context?.typewriter} />
+{:else if node.type === 'paragraph'}
+  <ParagraphNode node={node} {context} {indexKey} />
+{:else if node.type === 'heading'}
+  <HeadingNode node={node} {context} {indexKey} />
+{:else if node.type === 'blockquote'}
+  <BlockquoteNode node={node} {context} {indexKey} />
+{:else if node.type === 'list'}
+  <ListNode node={node} {context} {indexKey} />
+{:else if node.type === 'list_item'}
+  <ListItemNode node={node} {context} {indexKey} />
+{:else if node.type === 'table'}
+  <TableNode node={node} {context} />
+{:else if node.type === 'definition_list'}
+  <DefinitionListNode node={node} {context} />
+{:else if node.type === 'footnote'}
+  <FootnoteNode node={node} {context} />
+{:else if node.type === 'footnote_reference'}
+  <FootnoteReferenceNode node={node} />
+{:else if node.type === 'footnote_anchor'}
+  <FootnoteAnchorNode node={node} />
+{:else if node.type === 'admonition'}
+  <AdmonitionNode node={node} {context} />
+{:else if node.type === 'hardbreak'}
   <HardBreakNode />
-{:else if resolvedType === 'link'}
-  <LinkNode {node} {context} {indexKey} showTooltip={typeof context?.showTooltips === 'boolean' ? context?.showTooltips : undefined} />
-{:else if resolvedType === 'image'}
-  <ImageNode {node} />
-{:else if resolvedType === 'inline_code'}
-  <InlineCodeNode {node} />
-{:else if resolvedType === 'strong'}
-  <StrongNode {node} {context} {indexKey} />
-{:else if resolvedType === 'emphasis'}
-  <EmphasisNode {node} {context} {indexKey} />
-{:else if resolvedType === 'strikethrough'}
-  <StrikethroughNode {node} {context} {indexKey} />
-{:else if resolvedType === 'highlight'}
-  <HighlightNode {node} {context} {indexKey} />
-{:else if resolvedType === 'insert'}
-  <InsertNode {node} {context} {indexKey} />
-{:else if resolvedType === 'subscript'}
-  <SubscriptNode {node} {context} {indexKey} />
-{:else if resolvedType === 'superscript'}
-  <SuperscriptNode {node} {context} {indexKey} />
-{:else if resolvedType === 'checkbox' || resolvedType === 'checkbox_input'}
-  <CheckboxNode {node} />
-{:else if resolvedType === 'emoji'}
-  <EmojiNode {node} />
-{:else if resolvedType === 'reference'}
-  <ReferenceNode {node} {context} />
-{:else if resolvedType === 'html_block'}
+{:else if node.type === 'link'}
+  <LinkNode node={node} {context} {indexKey} showTooltip={typeof context?.showTooltips === 'boolean' ? context?.showTooltips : undefined} />
+{:else if node.type === 'image'}
+  <ImageNode node={node} />
+{:else if node.type === 'inline_code'}
+  <InlineCodeNode node={node} />
+{:else if node.type === 'strong'}
+  <StrongNode node={node} {context} {indexKey} />
+{:else if node.type === 'emphasis'}
+  <EmphasisNode node={node} {context} {indexKey} />
+{:else if node.type === 'strikethrough'}
+  <StrikethroughNode node={node} {context} {indexKey} />
+{:else if node.type === 'highlight'}
+  <HighlightNode node={node} {context} {indexKey} />
+{:else if node.type === 'insert'}
+  <InsertNode node={node} {context} {indexKey} />
+{:else if node.type === 'subscript'}
+  <SubscriptNode node={node} {context} {indexKey} />
+{:else if node.type === 'superscript'}
+  <SuperscriptNode node={node} {context} {indexKey} />
+{:else if node.type === 'checkbox' || node.type === 'checkbox_input'}
+  <CheckboxNode node={node} />
+{:else if node.type === 'emoji'}
+  <EmojiNode node={node} />
+{:else if node.type === 'reference'}
+  <ReferenceNode node={node} {context} />
+{:else if node.type === 'html_block'}
   {#if shouldEscapeHtmlTag}
-    <TextNode node={escapedTextNode} {context} {indexKey} />
+    <TextNode node={escapedTextNode as SvelteRenderableNode<'text'>} {context} {indexKey} />
   {:else}
-    <HtmlBlockNode node={htmlRenderNode} {context} />
+    <HtmlBlockNode node={htmlRenderNode as SvelteRenderableNode<'html_block'>} {context} />
   {/if}
-{:else if resolvedType === 'html_inline'}
+{:else if node.type === 'html_inline'}
   {#if shouldEscapeHtmlTag}
-    <TextNode node={escapedTextNode} {context} {indexKey} />
+    <TextNode node={escapedTextNode as SvelteRenderableNode<'text'>} {context} {indexKey} />
   {:else}
-    <HtmlInlineNode node={htmlRenderNode} {context} />
+    <HtmlInlineNode node={htmlRenderNode as SvelteRenderableNode<'html_inline'>} {context} />
   {/if}
-{:else if resolvedType === 'vmr_container'}
-  <VmrContainerNode {node} {context} />
-{:else if resolvedType === 'thematic_break'}
+{:else if node.type === 'vmr_container'}
+  <VmrContainerNode node={node} {context} />
+{:else if node.type === 'thematic_break'}
   <ThematicBreakNode />
-{:else if resolvedType === 'math_inline'}
-  <MathInlineNode {node} />
-{:else if resolvedType === 'math_block'}
-  <MathBlockNode {node} />
-{:else if resolvedType === 'code_block'}
+{:else if node.type === 'math_inline'}
+  <MathInlineNode node={node} />
+{:else if node.type === 'math_block'}
+  <MathBlockNode node={node} />
+{:else if node.type === 'code_block'}
   {#if codeMode === 'mermaid'}
-    <MermaidBlockNode {node} {context} {...customInputs} />
+    <MermaidBlockNode node={node} {context} {...customInputs} />
   {:else if codeMode === 'd2'}
-    <D2BlockNode {node} {context} {...customInputs} />
+    <D2BlockNode node={node} {context} {...customInputs} />
   {:else if codeMode === 'infographic'}
-    <InfographicBlockNode {node} {context} {...customInputs} />
+    <InfographicBlockNode node={node} {context} {...customInputs} />
   {:else if codeMode === 'pre'}
-    <PreCodeNode {node} />
+    <PreCodeNode node={node} />
   {:else}
     {#key codeBlockInstanceKey}
-      <CodeBlockNode {node} {context} {...customInputs} />
+      <CodeBlockNode node={node} {context} {...customInputs} />
     {/key}
   {/if}
-{:else if resolvedType === 'label_open' || resolvedType === 'label_close'}
+{:else if node.type === 'label_open' || node.type === 'label_close'}
   <span hidden></span>
 {:else}
   <FallbackComponent {node} {context} />

@@ -17,4 +17,4 @@
   }: Props = $props()
 </script>
 
-<svelte:element this={tag}><RenderChildren nodes={getNodeList((node as any)?.children)} {context} prefix={String(indexKey ?? tag) + '-' + tag} /></svelte:element>
+<svelte:element this={tag}><RenderChildren nodes={getNodeList(node.children)} {context} prefix={String(indexKey ?? tag) + '-' + tag} /></svelte:element>

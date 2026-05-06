@@ -14,7 +14,7 @@
   type MermaidTheme = 'light' | 'dark'
 
   type Props = {
-    node: SvelteRenderableNode
+    node: SvelteRenderableNode<'code_block'>
     context?: SvelteRenderContext
     maxHeight?: string | null
     estimatedPreviewHeightPx?: number
@@ -78,8 +78,8 @@
   let renderTimer: ReturnType<typeof setTimeout> | null = $state(null)
   let copyTimer: ReturnType<typeof setTimeout> | null = $state(null)
 
-  let source = $derived(normalizeMermaidSource(getString((node as any)?.code)))
-  let nodeLoading = $derived(typeof (node as any)?.loading === 'boolean' ? Boolean((node as any)?.loading) : true)
+  let source = $derived(normalizeMermaidSource(getString(node.code)))
+  let nodeLoading = $derived(typeof node.loading === 'boolean' ? Boolean(node.loading) : true)
   let resolvedLoading = $derived(loading ?? nodeLoading)
   let resolvedIsDark = $derived(isDark ?? context?.isDark ?? false)
   let theme = $derived((resolvedIsDark ? 'dark' : 'light') as MermaidTheme)

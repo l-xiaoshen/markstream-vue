@@ -3,7 +3,7 @@
   import { renderNodeHtml } from './shared/renderNodeHtml'
 
   type Props = {
-    node: SvelteRenderableNode
+    node: SvelteRenderableNode<'table'>
     context?: SvelteRenderContext
   };
   let {

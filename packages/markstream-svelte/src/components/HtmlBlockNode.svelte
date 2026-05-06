@@ -3,7 +3,7 @@
   import { renderNodeHtml } from './shared/renderNodeHtml'
 
   interface Props {
-    node: SvelteRenderableNode
+    node: SvelteRenderableNode<'html_block'>
     context?: SvelteRenderContext
   }
 

@@ -1,4 +1,5 @@
 import type { BaseNode, CustomComponentAttrs, HtmlPolicy, ParsedNode, ParseOptions } from 'stream-markdown-parser'
+
 import {
   getMarkdown,
   isHtmlTagBlocked,
@@ -12,7 +13,17 @@ import {
 import { hydrateCustomTagContent } from './hydrateCustomTagContent'
 import { sanitizeHtmlContent } from './sanitizeHtmlContent'
 
-export type RenderableMarkdownNode = (ParsedNode | BaseNode) & Record<string, unknown>
+type ExtractStrictNodes<T> = T extends { type: infer U } ? (string extends U ? never : T) : never
+type StrictParsedNode = ExtractStrictNodes<ParsedNode>
+type ExtendedParsedNode = StrictParsedNode | (BaseNode & { type: 'label_open' | 'label_close' }) | (BaseNode & { type: 'text_special', content: string }) | (BaseNode & { type: 'footnote_anchor' })
+
+export type RenderableMarkdownNode<T extends string = string> = 
+  (string extends T 
+    ? ExtendedParsedNode
+    : Extract<ExtendedParsedNode, { type: T }> extends never 
+      ? BaseNode 
+      : Extract<ExtendedParsedNode, { type: T }>
+  ) & Record<string, any>
 
 type NestedClassValue = string | readonly string[] | null | undefined
 
@@ -91,7 +102,7 @@ const KNOWN_NODE_TYPES = new Set([
 export function renderMarkdownToHtml(input: MarkstreamSvelteRenderOptions): string {
   const normalizedTags = normalizeCustomHtmlTags([
     ...(input.customHtmlTags || []),
-    ...((((input.parseOptions as any)?.customHtmlTags) || []) as string[]),
+    ...((((input.parseOptions as { customHtmlTags?: string[] })?.customHtmlTags) || []) as string[]),
   ])
   const ctx = createRenderContext({
     allowHtml: input.allowHtml,
@@ -136,7 +147,7 @@ function resolveParsedNodes(input: MarkstreamSvelteRenderOptions, ctx: RenderCon
 
   const normalizedTags = normalizeCustomHtmlTags([
     ...(input.customHtmlTags || []),
-    ...((((input.parseOptions as any)?.customHtmlTags) || []) as string[]),
+    ...((((input.parseOptions as { customHtmlTags?: string[] })?.customHtmlTags) || []) as string[]),
   ])
   const mergedParseOptions: ParseOptions = {
     ...(input.parseOptions ?? {}),
@@ -144,7 +155,7 @@ function resolveParsedNodes(input: MarkstreamSvelteRenderOptions, ctx: RenderCon
   if (typeof input.final === 'boolean')
     mergedParseOptions.final = input.final
   if (normalizedTags.length > 0)
-    (mergedParseOptions as any).customHtmlTags = normalizedTags
+    (mergedParseOptions as { customHtmlTags?: string[] }).customHtmlTags = normalizedTags
 
   return hydrateCustomTagContent(
     parseMarkdownToStructure(content, ctx.markdown, mergedParseOptions) as RenderableMarkdownNode[],

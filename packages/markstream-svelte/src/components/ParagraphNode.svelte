@@ -5,7 +5,7 @@
   import { getNodeList, splitParagraphChildren } from './shared/node-helpers'
 
   type Props = {
-    node: SvelteRenderableNode
+    node: SvelteRenderableNode<'paragraph'>
     context?: SvelteRenderContext
     indexKey?: string | number
   };
@@ -16,7 +16,7 @@
   }: Props = $props()
 
   let prefix = $derived(String(indexKey ?? 'p'))
-  let parts = $derived(splitParagraphChildren(getNodeList((node as any)?.children)))
+  let parts = $derived(splitParagraphChildren(getNodeList(node.children)))
 </script>
 
 {#each parts as part, index (prefix + '-' + index)}

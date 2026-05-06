@@ -5,7 +5,7 @@
   import { getNodeList, getString } from './shared/node-helpers'
   
   interface Props {
-    node: SvelteRenderableNode;
+    node: SvelteRenderableNode<'link'>
     context?: SvelteRenderContext;
     indexKey?: string | number;
     showTooltip?: boolean;
@@ -13,9 +13,9 @@
   
   let { node, context, indexKey, showTooltip }: Props = $props();
 
-  let href = $derived(getString((node as any)?.href));
-  let title = $derived(getString((node as any)?.title || href));
-  let children = $derived(getNodeList((node as any)?.children));
+  let href = $derived(getString(node.href));
+  let title = $derived(getString(node.title || href));
+  let children = $derived(getNodeList(node.children));
   let tooltipEnabled = $derived(showTooltip ?? context?.showTooltips ?? true);
   let isHashLink = $derived(href.startsWith('#') && href.length > 1);
 
@@ -44,4 +44,4 @@
     }
   }
 </script>
-<a class:link-loading={Boolean((node as any)?.loading)} class="link-node" href={href || undefined} title={tooltipEnabled ? undefined : title} onblur={() => hideTooltip()} onclick={scrollToHashTarget} onfocus={showLinkTooltip} onmouseleave={() => hideTooltip()} onmouseenter={showLinkTooltip} target={isHashLink ? undefined : '_blank'} rel={isHashLink ? undefined : 'noreferrer noopener'}><span class="link-text-wrapper"><span class="link-text">{#if children.length}<RenderChildren nodes={children} context={context} prefix={String(indexKey ?? 'link') + '-link'} />{:else}{getString((node as any)?.text || href)}{/if}</span>{#if (node as any)?.loading}<span class="link-loading-indicator"></span>{/if}</span></a>
+<a class:link-loading={Boolean(node.loading)} class="link-node" href={href || undefined} title={tooltipEnabled ? undefined : title} onblur={() => hideTooltip()} onclick={scrollToHashTarget} onfocus={showLinkTooltip} onmouseleave={() => hideTooltip()} onmouseenter={showLinkTooltip} target={isHashLink ? undefined : '_blank'} rel={isHashLink ? undefined : 'noreferrer noopener'}><span class="link-text-wrapper"><span class="link-text">{#if children.length}<RenderChildren nodes={children} context={context} prefix={String(indexKey ?? 'link') + '-link'} />{:else}{getString(node.text || href)}{/if}</span>{#if node.loading}<span class="link-loading-indicator"></span>{/if}</span></a>

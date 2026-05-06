@@ -22,7 +22,7 @@ export function resolveNodeOutletCodeMode(
 }
 
 export function resolveHtmlTag(node: SvelteRenderableNode) {
-  return String((node as any)?.tag || '').trim().toLowerCase() || getHtmlTagFromContent((node as any)?.content)
+  return String(node.tag || '').trim().toLowerCase() || getHtmlTagFromContent(node.content)
 }
 
 export function coerceCustomHtmlNode(node: SvelteRenderableNode) {
@@ -30,10 +30,10 @@ export function coerceCustomHtmlNode(node: SvelteRenderableNode) {
   if (!tag)
     return node
   return {
-    ...(node as any),
+    ...node,
     type: tag,
     tag,
-    content: stripCustomHtmlWrapper((node as any)?.content, tag),
+    content: stripCustomHtmlWrapper(node.content, tag),
   } as SvelteRenderableNode
 }
 
@@ -42,7 +42,7 @@ export function coerceBuiltinHtmlNode(node: SvelteRenderableNode, resolvedType: 
   if (!tag)
     return node
   return {
-    ...(node as any),
+    ...node,
     type: resolvedType,
     tag,
   } as SvelteRenderableNode
@@ -52,7 +52,7 @@ export function resolveNodeOutletCustomInputs(
   node: SvelteRenderableNode,
   context?: SvelteRenderContext,
 ) {
-  if (String((node as any)?.type || '') !== 'code_block')
+  if (String(node.type || '') !== 'code_block')
     return null
 
   const codeMode = resolveNodeOutletCodeMode(node, context)
@@ -74,7 +74,7 @@ export function resolveNodeOutletCustomInputs(
 }
 
 function getNodeCode(node: SvelteRenderableNode) {
-  return String((node as any)?.code ?? '')
+  return String(node.code ?? '')
 }
 
 function withEstimatedPreviewHeight(props: Record<string, any> | null | undefined, estimatedHeight: number) {
@@ -95,7 +95,7 @@ export function resolveNodeOutletCustomComponent(
   customComponents?: Record<string, any> | null,
 ) {
   const mapping = customComponents ?? context?.customComponents ?? null
-  const resolvedType = String((node as any)?.type || '')
+  const resolvedType = String(node.type || '')
 
   if (resolvedType === 'code_block') {
     const language = resolveCodeBlockLanguage(node)

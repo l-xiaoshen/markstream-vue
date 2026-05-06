@@ -10,7 +10,7 @@
   import { getString } from './shared/node-helpers'
 
   type Props = {
-    node: SvelteRenderableNode
+    node: SvelteRenderableNode<'code_block'>
     context?: SvelteRenderContext | undefined
     maxHeight?: string | null | undefined
     estimatedPreviewHeightPx?: number | undefined
@@ -64,8 +64,8 @@
   let zoom = $state(1)
   let copyTimer: ReturnType<typeof setTimeout> | null = null
 
-  let source = $derived(getString((node as any)?.code))
-  let nodeLoading = $derived(typeof (node as any)?.loading === 'boolean' ? Boolean((node as any)?.loading) : true)
+  let source = $derived(getString(node.code))
+  let nodeLoading = $derived(typeof node.loading === 'boolean' ? Boolean(node.loading) : true)
   let resolvedLoading = $derived(loading ?? nodeLoading)
   let final = $derived(context?.final ?? resolvedLoading === false)
   let progressivePreview = $derived(resolvedLoading !== false || final === false)

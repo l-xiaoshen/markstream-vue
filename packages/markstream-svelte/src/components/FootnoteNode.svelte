@@ -4,15 +4,15 @@
   import { getNodeList, getString } from './shared/node-helpers'
 
   interface Props {
-    node: SvelteRenderableNode
+    node: SvelteRenderableNode<'footnote'>
     context?: SvelteRenderContext
     indexKey?: string | number
   }
 
   let { node, context = undefined, indexKey = undefined }: Props = $props()
 
-  let id = $derived(getString((node as any)?.id))
-  let children = $derived(getNodeList((node as any)?.children))
+  let id = $derived(getString(node.id))
+  let children = $derived(getNodeList(node.children))
   let prefix = $derived(`footnote-${indexKey ?? (id || 'node')}`)
 </script>
 

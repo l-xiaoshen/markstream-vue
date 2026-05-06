@@ -6,7 +6,7 @@
   import { untrack } from 'svelte'
 
   type Props = {
-    node: SvelteRenderableNode;
+    node: SvelteRenderableNode<'image'>
     fallbackSrc?: string;
     lazy?: boolean;
     usePlaceholder?: boolean;
@@ -21,14 +21,14 @@
 
   const { t } = useSafeI18n()
 
-  let src = $derived(getString((node as any)?.src))
-  let alt = $derived(getString((node as any)?.alt))
-  let title = $derived(getString((node as any)?.title))
-  let raw = $derived(getString((node as any)?.raw))
-  let isLoading = $derived(Boolean((node as any)?.loading))
+  let src = $derived(getString(node.src))
+  let alt = $derived(getString(node.alt))
+  let title = $derived(getString(node.title))
+  let raw = $derived(getString(node.raw))
+  let isLoading = $derived(Boolean(node.loading))
   let useEagerImagePath = $derived(!lazy)
 
-  let initialSrc = untrack(() => getString((node as any)?.src))
+  let initialSrc = untrack(() => getString(node.src))
   let previousSrc = $state(initialSrc)
   let currentSrc = $state(initialSrc)
   let imageLoaded = $state(false)

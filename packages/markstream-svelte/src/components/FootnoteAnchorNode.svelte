@@ -3,12 +3,12 @@
   import { getString } from './shared/node-helpers'
 
   interface Props {
-    node: SvelteRenderableNode
+    node: SvelteRenderableNode<'footnote_anchor'>
   }
 
   let { node }: Props = $props()
 
-  let id = $derived(getString((node as any)?.id))
+  let id = $derived(getString(node.id))
   let href = $derived(id ? `#fnref-${id}` : undefined)
 
   function scrollToReference(event: MouseEvent) {

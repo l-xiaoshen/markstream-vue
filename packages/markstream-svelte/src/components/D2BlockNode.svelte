@@ -30,7 +30,7 @@
   }
 
   type Props = {
-    node: SvelteRenderableNode
+    node: SvelteRenderableNode<'code_block'>
     context?: SvelteRenderContext | undefined
     maxHeight?: string | null | undefined
     loading?: boolean | undefined
@@ -75,8 +75,8 @@
   let showSource = $state(false)
   let copyTimer: ReturnType<typeof setTimeout> | null = null
 
-  let source = $derived(getString((node as any)?.code))
-  let resolvedLoading = $derived(loading ?? (node as any)?.loading === true)
+  let source = $derived(getString(node.code))
+  let resolvedLoading = $derived(loading ?? node.loading === true)
   let resolvedIsDark = $derived(isDark ?? context?.isDark ?? false)
   let shouldRender = $derived(!(resolvedLoading && !source.trim()))
   let showSourceFallback = $derived(showSource || !svgMarkup)

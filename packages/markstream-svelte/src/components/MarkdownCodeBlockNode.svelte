@@ -3,7 +3,7 @@
   import CodeBlockNode from './CodeBlockNode.svelte'
 
   type Props = {
-    node: SvelteRenderableNode
+    node: SvelteRenderableNode<'code_block'>
     context?: SvelteRenderContext
   };
   let {

@@ -6,7 +6,7 @@
   import { renderKaTeXWithBackpressure, setKaTeXCache, WORKER_BUSY_CODE } from '../workers/katexWorkerClient'
   import { getString } from './shared/node-helpers'
 
-  type Props = { node: SvelteRenderableNode }
+  type Props = { node: SvelteRenderableNode<'math_inline'> }
   let { node }: Props = $props()
 
   let mathEl: HTMLSpanElement | null = $state(null)
@@ -15,10 +15,10 @@
   let renderVersion = 0
   let hasRenderedOnce = false
 
-  let source = $derived(getString((node as any)?.content || (node as any)?.markup || (node as any)?.raw))
-  let raw = $derived(getString((node as any)?.raw || source))
-  let nodeLoading = $derived((node as any)?.loading === true)
-  let displayMode = $derived(String((node as any)?.markup || '') === '$$')
+  let source = $derived(getString(node.content || node.markup || node.raw))
+  let raw = $derived(getString(node.raw || source))
+  let nodeLoading = $derived(node.loading === true)
+  let displayMode = $derived(String(node.markup || '') === '$$')
 
   $effect(() => {
     if (mathEl) {

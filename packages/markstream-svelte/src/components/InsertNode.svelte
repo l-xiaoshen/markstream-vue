@@ -3,7 +3,7 @@
   import InlineWrapNode from './InlineWrapNode.svelte'
 
   type Props = {
-    node: SvelteRenderableNode
+    node: SvelteRenderableNode<'insert'>
     context?: SvelteRenderContext
     indexKey?: string | number
   };

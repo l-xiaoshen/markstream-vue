@@ -3,11 +3,11 @@
   import { getString } from './shared/node-helpers'
 
   interface Props {
-    node: SvelteRenderableNode;
+    node: SvelteRenderableNode<'emoji'>
   }
 
   let { node }: Props = $props();
 
-  let value = $derived(getString((node as any)?.raw || (node as any)?.markup || (node as any)?.content || (node as any)?.name));
+  let value = $derived(getString(node.raw || node.markup || node.content || node.name));
 </script>
 <span class="emoji-node">{value}</span>

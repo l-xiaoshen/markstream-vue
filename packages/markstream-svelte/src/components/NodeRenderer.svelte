@@ -325,11 +325,11 @@
 
   function hasLoadingNodes(nodes: SvelteRenderableNode[]): boolean {
     for (const node of nodes) {
-      if ((node as any)?.loading === true)
+      if (node.loading === true)
         return true
-      if (hasLoadingNodes(((node as any)?.children || []) as SvelteRenderableNode[]))
+      if (hasLoadingNodes((node.children || []) as SvelteRenderableNode[]))
         return true
-      if (hasLoadingNodes(((node as any)?.items || []) as SvelteRenderableNode[]))
+      if (hasLoadingNodes((node.items || []) as SvelteRenderableNode[]))
         return true
     }
     return false
@@ -361,8 +361,8 @@
   onmouseout={handleMouseout}
 >
   {#each renderedNodes as node, index ((indexKey != null ? String(indexKey) : 'markdown-renderer') + '-' + index)}
-    <div class="node-slot" data-node-index={index} data-node-type={(node as any)?.type}>
-      <div class:typewriter-node={typewriter !== false && String((node as any)?.type || '') !== 'code_block'} class="node-content" data-node-index={index}>
+    <div class="node-slot" data-node-index={index} data-node-type={node.type}>
+      <div class:typewriter-node={typewriter !== false && String(node.type || '') !== 'code_block'} class="node-content" data-node-index={index}>
         <NodeOutlet node={node} context={renderContext} indexKey={(indexKey != null ? String(indexKey) : 'markdown-renderer') + '-' + index} />
       </div>
     </div>

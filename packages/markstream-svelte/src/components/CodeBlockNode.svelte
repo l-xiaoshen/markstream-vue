@@ -11,7 +11,7 @@
   import { getString, sanitizeClassToken } from './shared/node-helpers'
 
   type Props = {
-    node: SvelteRenderableNode
+    node: SvelteRenderableNode<'code_block'>
     context?: SvelteRenderContext | undefined
     isDark?: boolean | undefined
     loading?: boolean | undefined
@@ -151,14 +151,14 @@
   let tokenizeRaf: number | null = $state(null)
   let tokenizeShouldRefreshModelValue = $state(false)
 
-  let rawLanguage = $derived(getString((node as any)?.language).trim())
+  let rawLanguage = $derived(getString(node.language).trim())
   let canonicalLanguage = $derived(normalizeLanguageIdentifier(rawLanguage))
   let monacoLanguage = $derived(resolveMonacoLanguageId(canonicalLanguage || rawLanguage || 'plaintext'))
   let code = $derived(getResolvedCode(node))
-  let diff = $derived(Boolean((node as any)?.diff))
-  let originalCode = $derived(getString((node as any)?.originalCode))
-  let updatedCode = $derived(getString((node as any)?.updatedCode))
-  let nodeLoading = $derived((node as any)?.loading === true)
+  let diff = $derived(Boolean(node.diff))
+  let originalCode = $derived(getString(node.originalCode))
+  let updatedCode = $derived(getString(node.updatedCode))
+  let nodeLoading = $derived(node.loading === true)
   let resolvedLoading = $derived(loading ?? nodeLoading)
   let resolvedStream = $derived(stream ?? context?.codeBlockStream ?? true)
   let resolvedIsDark = $derived(isDark ?? context?.isDark ?? false)
@@ -253,16 +253,16 @@
   })
 
   function getResolvedCode(sourceNode: SvelteRenderableNode) {
-    if ((sourceNode as any)?.diff)
-      return getString((sourceNode as any)?.updatedCode ?? (sourceNode as any)?.code)
-    return getString((sourceNode as any)?.code)
+    if (sourceNode.diff)
+      return getString(sourceNode.updatedCode ?? sourceNode.code)
+    return getString(sourceNode.code)
   }
 
   function getThemeName(theme: CodeBlockMonacoTheme | undefined, fallback: string) {
     if (typeof theme === 'string' && theme)
       return theme
-    if (theme && typeof theme === 'object' && typeof (theme as any).name === 'string')
-      return String((theme as any).name)
+    if (theme && typeof theme === 'object' && 'name' in theme && typeof theme.name === 'string')
+      return String(theme.name)
     return fallback
   }
 

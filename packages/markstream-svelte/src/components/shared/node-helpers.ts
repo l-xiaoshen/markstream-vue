@@ -1,4 +1,4 @@
-import type { BaseNode, HtmlPolicy, MarkdownIt, ParsedNode, ParseOptions } from 'stream-markdown-parser'
+import type { BaseNode, HtmlPolicy, MarkdownIt, ParsedNode, ParseOptions, UnknownNode } from 'stream-markdown-parser'
 import type { CustomComponentMap } from '../../customComponents'
 import type { CodeBlockMonacoOptions, CodeBlockMonacoTheme } from '../../types/monaco'
 import {
@@ -20,7 +20,9 @@ export {
   stripCustomHtmlWrapper,
 }
 
-export type SvelteRenderableNode = (ParsedNode | BaseNode) & Record<string, unknown>
+import type { RenderableMarkdownNode } from '../../renderMarkdownHtml'
+
+export type SvelteRenderableNode<T extends string = string> = RenderableMarkdownNode<T>
 
 export interface NodeRendererEvents {
   onCopy?: (code: string) => void
@@ -125,7 +127,7 @@ export function buildRenderContext(
 ): SvelteRenderContext {
   const customHtmlTags = normalizeCustomHtmlTags([
     ...(props.customHtmlTags || []),
-    ...((((props.parseOptions as any)?.customHtmlTags) || []) as string[]),
+    ...((((props.parseOptions as { customHtmlTags?: string[] })?.customHtmlTags) || []) as string[]),
   ])
 
   return {
@@ -171,7 +173,7 @@ export function resolveParsedNodes(props: NodeRendererProps): SvelteRenderableNo
 
   const normalizedTags = normalizeCustomHtmlTags([
     ...(props.customHtmlTags || []),
-    ...((((props.parseOptions as any)?.customHtmlTags) || []) as string[]),
+    ...((((props.parseOptions as { customHtmlTags?: string[] })?.customHtmlTags) || []) as string[]),
   ])
   const cacheKey = `${props.customId || 'markstream-svelte'}::${normalizedTags.join(',')}`
   let markdown = markdownCache.get(cacheKey)
@@ -190,7 +192,7 @@ export function resolveParsedNodes(props: NodeRendererProps): SvelteRenderableNo
   if (typeof props.final === 'boolean')
     options.final = props.final
   if (normalizedTags.length > 0)
-    (options as any).customHtmlTags = normalizedTags
+    (options as { customHtmlTags?: string[] }).customHtmlTags = normalizedTags
 
   return hydrateCustomTagContent(
     parseMarkdownToStructure(content, parser, options) as SvelteRenderableNode[],
@@ -206,25 +208,25 @@ export function getNodeList(value: unknown): SvelteRenderableNode[] {
 }
 
 export function isWhitespaceTextNode(node: SvelteRenderableNode | null | undefined) {
-  return getString((node as any)?.type) === 'text' && getString((node as any)?.content).trim() === ''
+  return getString(node?.type) === 'text' && getString(node?.content).trim() === ''
 }
 
 export function getMeaningfulLinkChildren(node: SvelteRenderableNode | null | undefined) {
-  if (getString((node as any)?.type) !== 'link')
+  if (getString(node?.type) !== 'link')
     return []
 
-  return getNodeList((node as any)?.children).filter(child => !isWhitespaceTextNode(child))
+  return getNodeList(node?.children).filter(child => !isWhitespaceTextNode(child))
 }
 
 export function isImageOnlyLinkNode(node: SvelteRenderableNode | null | undefined) {
   const linkChildren = getMeaningfulLinkChildren(node)
-  return linkChildren.length === 1 && getString((linkChildren[0] as any)?.type) === 'image'
+  return linkChildren.length === 1 && getString(linkChildren[0]?.type) === 'image'
 }
 
 export function isMediaOnlyParagraphNodes(children: readonly SvelteRenderableNode[]) {
   const meaningfulChildren = getNodeList(children).filter(child => !isWhitespaceTextNode(child))
   return meaningfulChildren.length > 0
-    && meaningfulChildren.every(child => getString((child as any)?.type) === 'image' || isImageOnlyLinkNode(child))
+    && meaningfulChildren.every(child => getString(child?.type) === 'image' || isImageOnlyLinkNode(child))
 }
 
 export function normalizeMediaOnlyParagraphNodes(children: readonly SvelteRenderableNode[]) {
@@ -248,7 +250,7 @@ export function normalizeMediaOnlyParagraphNodes(children: readonly SvelteRender
       continue
 
     normalized.push({
-      ...(child as Record<string, unknown>),
+      ...child,
       content: ' ',
       raw: ' ',
     } as SvelteRenderableNode)
@@ -302,7 +304,7 @@ export function normalizeCodeLanguage(raw: unknown) {
 }
 
 export function resolveCodeBlockLanguage(node: SvelteRenderableNode) {
-  return normalizeCodeLanguage((node as any)?.language)
+  return normalizeCodeLanguage(node?.language)
 }
 
 export function encodeDataPayload(value: string) {

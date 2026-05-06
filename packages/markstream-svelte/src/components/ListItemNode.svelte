@@ -4,7 +4,7 @@
   import { getNodeList } from './shared/node-helpers'
 
   type Props = {
-    node: SvelteRenderableNode
+    node: SvelteRenderableNode<'list_item'>
     context?: SvelteRenderContext
     indexKey?: string | number
   };
@@ -15,4 +15,4 @@
   }: Props = $props()
 </script>
 
-<li><RenderChildren nodes={getNodeList((node as any)?.children)} {context} prefix={String(indexKey ?? 'li') + '-li'} /></li>
+<li><RenderChildren nodes={getNodeList(node.children)} {context} prefix={String(indexKey ?? 'li') + '-li'} /></li>

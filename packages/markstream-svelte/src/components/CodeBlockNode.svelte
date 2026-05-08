@@ -340,7 +340,7 @@
   });
 
   function getResolvedCode(sourceNode: SvelteRenderableNode<"code_block">) {
-    if (sourceNode.diff) return sourceNode.updatedCode || sourceNode.code || "";
+    if (sourceNode.diff) return sourceNode.updatedCode ?? sourceNode.code ?? "";
     return sourceNode.code || "";
   }
 

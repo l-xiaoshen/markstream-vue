@@ -7,8 +7,6 @@
   import { hideTooltip, showTooltipForAnchor } from '../tooltip/singletonTooltip'
   import { clampPreviewHeight, estimateInfographicPreviewHeight, parsePositiveNumber } from './shared/diagram-height'
   import { clearElement, copyTextToClipboard, downloadSvgMarkup } from './shared/rich-block-helpers'
-  import { getString } from './shared/node-helpers'
-
   type Props = {
     node: SvelteRenderableNode<'code_block'>
     context?: SvelteRenderContext | undefined
@@ -64,7 +62,7 @@
   let zoom = $state(1)
   let copyTimer: ReturnType<typeof setTimeout> | null = null
 
-  let source = $derived(getString(node.code))
+  let source = $derived(node.code || '')
   let nodeLoading = $derived(typeof node.loading === 'boolean' ? Boolean(node.loading) : true)
   let resolvedLoading = $derived(loading ?? nodeLoading)
   let final = $derived(context?.final ?? resolvedLoading === false)

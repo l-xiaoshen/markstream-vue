@@ -1,11 +1,12 @@
-import type { SvelteRenderableNode, SvelteRenderContext } from './node-helpers'
+import { CustomComponentMap } from '../../customComponents'
 import { clampPreviewHeight, estimateInfographicPreviewHeight, estimateMermaidPreviewHeight, parsePositiveNumber } from './diagram-height'
+import type { SvelteRenderableNode, SvelteRenderContext } from './node-helpers'
 import { getHtmlTagFromContent, resolveCodeBlockLanguage, stripCustomHtmlWrapper } from './node-helpers'
 
 export type CodeBlockMode = 'mermaid' | 'd2' | 'infographic' | 'pre' | 'code'
 
 export function resolveNodeOutletCodeMode(
-  node: SvelteRenderableNode,
+  node: SvelteRenderableNode<'code_block'>,
   context?: SvelteRenderContext,
 ): CodeBlockMode {
   if (context?.renderCodeBlocksAsPre)
@@ -21,40 +22,36 @@ export function resolveNodeOutletCodeMode(
   return 'code'
 }
 
-export function resolveHtmlTag(node: SvelteRenderableNode) {
-  return String(node.tag || '').trim().toLowerCase() || getHtmlTagFromContent(node.content)
+export function resolveHtmlTag(node: SvelteRenderableNode<'html_block' | 'html_inline'>) {
+ return String(node.tag || '').trim().toLowerCase() || getHtmlTagFromContent(node.content)
 }
 
-export function coerceCustomHtmlNode(node: SvelteRenderableNode) {
+
+export function coerceBuiltinHtmlNode(
+  node: SvelteRenderableNode<'html_block'>,
+): SvelteRenderableNode<'html_block'>
+export function coerceBuiltinHtmlNode(
+  node: SvelteRenderableNode<'html_inline'>,
+): SvelteRenderableNode<'html_inline'>
+export function coerceBuiltinHtmlNode(
+  node: SvelteRenderableNode<'html_block' | 'html_inline'>,
+): SvelteRenderableNode<'html_block' | 'html_inline'> {
   const tag = resolveHtmlTag(node)
   if (!tag)
     return node
-  return {
-    ...node,
-    type: tag,
-    tag,
-    content: stripCustomHtmlWrapper(node.content, tag),
-  } as SvelteRenderableNode
+
+  if (node.type === 'html_block')
+    return { ...node, tag }
+
+  return { ...node, tag }
 }
 
-export function coerceBuiltinHtmlNode(node: SvelteRenderableNode, resolvedType: string) {
-  const tag = resolveHtmlTag(node)
-  if (!tag)
-    return node
-  return {
-    ...node,
-    type: resolvedType,
-    tag,
-  } as SvelteRenderableNode
-}
+
 
 export function resolveNodeOutletCustomInputs(
-  node: SvelteRenderableNode,
+  node: SvelteRenderableNode<'code_block'>,
   context?: SvelteRenderContext,
 ) {
-  if (String(node.type || '') !== 'code_block')
-    return null
-
   const codeMode = resolveNodeOutletCodeMode(node, context)
   if (codeMode === 'mermaid') {
     return withEstimatedPreviewHeight(
@@ -92,12 +89,11 @@ function withEstimatedPreviewHeight(props: Record<string, any> | null | undefine
 export function resolveNodeOutletCustomComponent(
   node: SvelteRenderableNode,
   context?: SvelteRenderContext,
-  customComponents?: Record<string, any> | null,
+  customComponents?: CustomComponentMap | null,
 ) {
   const mapping = customComponents ?? context?.customComponents ?? null
-  const resolvedType = String(node.type || '')
 
-  if (resolvedType === 'code_block') {
+  if (node.type === 'code_block') {
     const language = resolveCodeBlockLanguage(node)
     const customForLanguage = language ? mapping?.[language] : null
     if (customForLanguage)
@@ -114,13 +110,9 @@ export function resolveNodeOutletCustomComponent(
       return mapping.code_block
   }
 
-  const direct = mapping?.[resolvedType]
+  const direct = mapping?.[node.type]
   if (direct)
     return direct
-
-  const tag = resolveHtmlTag(node)
-  if (tag && mapping?.[tag])
-    return mapping[tag]
 
   return null
 }

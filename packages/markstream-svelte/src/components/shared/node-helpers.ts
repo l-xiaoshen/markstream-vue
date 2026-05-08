@@ -167,7 +167,7 @@ export function resolveParsedNodes(props: NodeRendererProps): SvelteRenderableNo
   if (Array.isArray(props.nodes))
     return props.nodes as SvelteRenderableNode[]
 
-  const content = getString(props.content)
+  const content = props.content || ''
   if (!content)
     return []
 
@@ -201,18 +201,18 @@ export function resolveParsedNodes(props: NodeRendererProps): SvelteRenderableNo
   ) as SvelteRenderableNode[]
 }
 
-export function getNodeList(value: unknown): SvelteRenderableNode[] {
+export function getNodeList<T extends SvelteRenderableNode = SvelteRenderableNode>(value: unknown): T[] {
   return Array.isArray(value)
-    ? value.filter((item): item is SvelteRenderableNode => !!item && typeof item === 'object')
+    ? value.filter((item): item is T => !!item && typeof item === 'object')
     : []
 }
 
 export function isWhitespaceTextNode(node: SvelteRenderableNode | null | undefined) {
-  return getString(node?.type) === 'text' && getString(node?.content).trim() === ''
+  return node?.type === 'text' && (('content' in node && typeof node.content === 'string' ? node.content : '') || '').trim() === ''
 }
 
 export function getMeaningfulLinkChildren(node: SvelteRenderableNode | null | undefined) {
-  if (getString(node?.type) !== 'link')
+  if (node?.type !== 'link')
     return []
 
   return getNodeList(node?.children).filter(child => !isWhitespaceTextNode(child))
@@ -220,13 +220,13 @@ export function getMeaningfulLinkChildren(node: SvelteRenderableNode | null | un
 
 export function isImageOnlyLinkNode(node: SvelteRenderableNode | null | undefined) {
   const linkChildren = getMeaningfulLinkChildren(node)
-  return linkChildren.length === 1 && getString(linkChildren[0]?.type) === 'image'
+  return linkChildren.length === 1 && linkChildren[0]?.type === 'image'
 }
 
 export function isMediaOnlyParagraphNodes(children: readonly SvelteRenderableNode[]) {
   const meaningfulChildren = getNodeList(children).filter(child => !isWhitespaceTextNode(child))
   return meaningfulChildren.length > 0
-    && meaningfulChildren.every(child => getString(child?.type) === 'image' || isImageOnlyLinkNode(child))
+    && meaningfulChildren.every(child => child?.type === 'image' || isImageOnlyLinkNode(child))
 }
 
 export function normalizeMediaOnlyParagraphNodes(children: readonly SvelteRenderableNode[]) {
@@ -259,20 +259,13 @@ export function normalizeMediaOnlyParagraphNodes(children: readonly SvelteRender
   return normalized
 }
 
-export function getString(value: unknown): string {
-  return typeof value === 'string'
-    ? value
-    : value == null
-      ? ''
-      : String(value)
-}
-
 export function isSafeAttrName(value: string): boolean {
   return /^[^\s"'<>`=]+$/.test(value) && !/^on/i.test(value)
 }
 
 export function escapeHtml(value: unknown): string {
-  return getString(value)
+  const strValue = typeof value === 'string' ? value : (value == null ? '' : String(value))
+  return strValue
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
@@ -303,7 +296,7 @@ export function normalizeCodeLanguage(raw: unknown) {
   return safe || 'plaintext'
 }
 
-export function resolveCodeBlockLanguage(node: SvelteRenderableNode) {
+export function resolveCodeBlockLanguage(node: SvelteRenderableNode<'code_block'>) {
   return normalizeCodeLanguage(node?.language)
 }
 
@@ -311,6 +304,7 @@ export function encodeDataPayload(value: string) {
   if (!value)
     return ''
 
+  // eslint-disable-next-line ts/no-explicit-any
   const globalBuffer = (globalThis as any)?.require?.('buffer')?.Buffer
   if (globalBuffer?.from)
     return globalBuffer.from(value, 'utf8').toString('base64')

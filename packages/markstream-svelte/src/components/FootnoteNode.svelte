@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { SvelteRenderableNode, SvelteRenderContext } from './shared/node-helpers'
   import RenderChildren from './RenderChildren.svelte'
-  import { getNodeList, getString } from './shared/node-helpers'
+  import { getNodeList } from './shared/node-helpers'
 
   interface Props {
     node: SvelteRenderableNode<'footnote'>
@@ -11,7 +11,7 @@
 
   let { node, context = undefined, indexKey = undefined }: Props = $props()
 
-  let id = $derived(getString(node.id))
+  let id = $derived(node.id || '')
   let children = $derived(getNodeList(node.children))
   let prefix = $derived(`footnote-${indexKey ?? (id || 'node')}`)
 </script>

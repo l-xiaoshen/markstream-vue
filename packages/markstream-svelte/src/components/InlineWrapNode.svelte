@@ -2,9 +2,10 @@
   import type { SvelteRenderableNode, SvelteRenderContext } from './shared/node-helpers'
   import RenderChildren from './RenderChildren.svelte'
   import { getNodeList } from './shared/node-helpers'
+  import { ParsedNode } from 'stream-markdown-parser';
 
   type Props = {
-    node: SvelteRenderableNode
+    node: SvelteRenderableNode & { children: readonly ParsedNode[] }
     context?: SvelteRenderContext
     indexKey?: string | number
     tag?: string

@@ -6,8 +6,6 @@
   import { extractRenderedSvg, toSafeSvgMarkup } from '../sanitizeSvg'
   import { hideTooltip, showTooltipForAnchor } from '../tooltip/singletonTooltip'
   import { copyTextToClipboard, downloadSvgMarkup } from './shared/rich-block-helpers'
-  import { getString } from './shared/node-helpers'
-
   const DARK_THEME_OVERRIDES: Record<string, string> = {
     N1: '#E5E7EB',
     N2: '#CBD5E1',
@@ -75,7 +73,7 @@
   let showSource = $state(false)
   let copyTimer: ReturnType<typeof setTimeout> | null = null
 
-  let source = $derived(getString(node.code))
+  let source = $derived(node.code || '')
   let resolvedLoading = $derived(loading ?? node.loading === true)
   let resolvedIsDark = $derived(isDark ?? context?.isDark ?? false)
   let shouldRender = $derived(!(resolvedLoading && !source.trim()))

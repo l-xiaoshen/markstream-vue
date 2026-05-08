@@ -9,7 +9,7 @@
   import { getCustomNodeComponents, subscribeCustomComponents } from '../customComponents'
   import { disposeRenderedHtmlEnhancements, enhanceRenderedHtml } from '../enhanceRenderedHtml'
   import NodeOutlet from './NodeOutlet.svelte'
-  import { buildRenderContext, resolveParsedNodes } from './shared/node-helpers'
+  import { buildRenderContext, getNodeList, resolveParsedNodes } from './shared/node-helpers'
 
   type NodeRendererComponentProps = NodeRendererProps & NodeRendererEvents & {
     className?: string
@@ -327,9 +327,9 @@
     for (const node of nodes) {
       if (node.loading === true)
         return true
-      if (hasLoadingNodes((node.children || []) as SvelteRenderableNode[]))
+      if ('children' in node && hasLoadingNodes(getNodeList(node.children)))
         return true
-      if (hasLoadingNodes((node.items || []) as SvelteRenderableNode[]))
+      if ('items' in node && hasLoadingNodes(getNodeList(node.items)))
         return true
     }
     return false

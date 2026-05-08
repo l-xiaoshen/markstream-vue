@@ -9,8 +9,6 @@
   import { canParseOffthread, findPrefixOffthread } from '../workers/mermaidWorkerClient'
   import { clampPreviewHeight, estimateMermaidPreviewHeight, getMermaidDiagramKind, parsePositiveNumber } from './shared/diagram-height'
   import { copyTextToClipboard, downloadSvgMarkup } from './shared/rich-block-helpers'
-  import { getString } from './shared/node-helpers'
-
   type MermaidTheme = 'light' | 'dark'
 
   type Props = {
@@ -78,7 +76,7 @@
   let renderTimer: ReturnType<typeof setTimeout> | null = $state(null)
   let copyTimer: ReturnType<typeof setTimeout> | null = $state(null)
 
-  let source = $derived(normalizeMermaidSource(getString(node.code)))
+  let source = $derived(normalizeMermaidSource(node.code || ''))
   let nodeLoading = $derived(typeof node.loading === 'boolean' ? Boolean(node.loading) : true)
   let resolvedLoading = $derived(loading ?? nodeLoading)
   let resolvedIsDark = $derived(isDark ?? context?.isDark ?? false)

@@ -4,8 +4,6 @@
   import { getKatex } from '../optional/katex'
   import { normalizeKaTeXRenderInput } from '../utils/normalizeKaTeXRenderInput'
   import { renderKaTeXWithBackpressure, setKaTeXCache, WORKER_BUSY_CODE } from '../workers/katexWorkerClient'
-  import { getString } from './shared/node-helpers'
-
   type Props = { node: SvelteRenderableNode<'math_block'> }
   let { node }: Props = $props()
 
@@ -15,8 +13,8 @@
   let renderVersion = 0
   let hasRenderedOnce = false
 
-  let source = $derived(getString(node.content || node.markup || node.raw))
-  let raw = $derived(getString(node.raw || source))
+  let source = $derived(node.content || node.markup || node.raw || '')
+  let raw = $derived(node.raw || source || '')
   let nodeLoading = $derived(node.loading === true)
 
   $effect(() => {

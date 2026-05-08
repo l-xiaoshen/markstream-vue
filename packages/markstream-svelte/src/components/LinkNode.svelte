@@ -2,7 +2,7 @@
   import type { SvelteRenderableNode, SvelteRenderContext } from './shared/node-helpers'
   import { hideTooltip, showTooltipForAnchor } from '../tooltip/singletonTooltip'
   import RenderChildren from './RenderChildren.svelte'
-  import { getNodeList, getString } from './shared/node-helpers'
+  import { getNodeList } from './shared/node-helpers'
   
   interface Props {
     node: SvelteRenderableNode<'link'>
@@ -13,8 +13,8 @@
   
   let { node, context, indexKey, showTooltip }: Props = $props();
 
-  let href = $derived(getString(node.href));
-  let title = $derived(getString(node.title || href));
+  let href = $derived(node.href || '');
+  let title = $derived(node.title || href || '');
   let children = $derived(getNodeList(node.children));
   let tooltipEnabled = $derived(showTooltip ?? context?.showTooltips ?? true);
   let isHashLink = $derived(href.startsWith('#') && href.length > 1);
@@ -44,4 +44,4 @@
     }
   }
 </script>
-<a class:link-loading={Boolean(node.loading)} class="link-node" href={href || undefined} title={tooltipEnabled ? undefined : title} onblur={() => hideTooltip()} onclick={scrollToHashTarget} onfocus={showLinkTooltip} onmouseleave={() => hideTooltip()} onmouseenter={showLinkTooltip} target={isHashLink ? undefined : '_blank'} rel={isHashLink ? undefined : 'noreferrer noopener'}><span class="link-text-wrapper"><span class="link-text">{#if children.length}<RenderChildren nodes={children} context={context} prefix={String(indexKey ?? 'link') + '-link'} />{:else}{getString(node.text || href)}{/if}</span>{#if node.loading}<span class="link-loading-indicator"></span>{/if}</span></a>
+<a class:link-loading={Boolean(node.loading)} class="link-node" href={href || undefined} title={tooltipEnabled ? undefined : title} onblur={() => hideTooltip()} onclick={scrollToHashTarget} onfocus={showLinkTooltip} onmouseleave={() => hideTooltip()} onmouseenter={showLinkTooltip} target={isHashLink ? undefined : '_blank'} rel={isHashLink ? undefined : 'noreferrer noopener'}><span class="link-text-wrapper"><span class="link-text">{#if children.length}<RenderChildren nodes={children} context={context} prefix={String(indexKey ?? 'link') + '-link'} />{:else}{node.text || href || ''}{/if}</span>{#if node.loading}<span class="link-loading-indicator"></span>{/if}</span></a>

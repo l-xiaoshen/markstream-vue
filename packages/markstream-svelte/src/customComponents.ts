@@ -1,6 +1,11 @@
 import type { Component } from 'svelte'
+import type { SvelteRenderableNode, SvelteRenderContext } from './components/shared/node-helpers'
 
-export type MarkstreamSvelteComponent = Component<Record<string, any>>
+export type MarkstreamSvelteComponent = Component<{
+  node: SvelteRenderableNode;
+  context?: SvelteRenderContext;
+  indexKey?: string | number;
+}>
 export type CustomComponentMap = Record<string, MarkstreamSvelteComponent>
 
 const GLOBAL_KEY = '__global__'

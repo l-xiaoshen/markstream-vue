@@ -1,8 +1,6 @@
 <script lang="ts">
   import type { SvelteRenderableNode } from './shared/node-helpers'
   import { useSafeI18n } from '../i18n/useSafeI18n'
-  import { getString } from './shared/node-helpers'
-
   import { untrack } from 'svelte'
 
   type Props = {
@@ -21,14 +19,14 @@
 
   const { t } = useSafeI18n()
 
-  let src = $derived(getString(node.src))
-  let alt = $derived(getString(node.alt))
-  let title = $derived(getString(node.title))
-  let raw = $derived(getString(node.raw))
+  let src = $derived(node.src || '')
+  let alt = $derived(node.alt || '')
+  let title = $derived(node.title || '')
+  let raw = $derived(node.raw || '')
   let isLoading = $derived(Boolean(node.loading))
   let useEagerImagePath = $derived(!lazy)
 
-  let initialSrc = untrack(() => getString(node.src))
+  let initialSrc = untrack(() => node.src || '')
   let previousSrc = $state(initialSrc)
   let currentSrc = $state(initialSrc)
   let imageLoaded = $state(false)

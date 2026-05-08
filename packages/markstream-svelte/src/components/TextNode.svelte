@@ -1,9 +1,7 @@
 <script lang="ts">
   import type { SvelteRenderableNode, SvelteRenderContext } from './shared/node-helpers'
-  import { getString } from './shared/node-helpers'
-
   interface Props {
-    node: SvelteRenderableNode<'text' | 'text_special'>
+    node: SvelteRenderableNode<'text'>
     context?: SvelteRenderContext
     indexKey?: string | number
     typewriter?: boolean
@@ -20,7 +18,7 @@
   let previousContent = ''
   let deltaClass = 'markstream-svelte-text__stream-delta--a'
 
-  const content = $derived(getString(node.content ?? node.raw))
+  const content = $derived(node.content || node.raw || '')
   const centered = $derived(Boolean(node.center))
   const streamKey = $derived(String(context?.customId ?? 'global') + ':' + String(context?.streamRenderVersion ?? 0) + ':' + String(indexKey ?? 'node'))
 

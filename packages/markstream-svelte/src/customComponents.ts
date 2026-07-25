@@ -1,14 +1,10 @@
 import type { BaseNode } from 'stream-markdown-parser'
 import type { Component } from 'svelte'
-import type { SvelteRenderContext } from './types/renderer'
+import type { NodeProps } from './types/componentProps'
 
-export interface MarkstreamCustomComponentProps<
+export type MarkstreamCustomComponentProps<
   TNode extends BaseNode = BaseNode,
-> {
-  node: TNode
-  context?: SvelteRenderContext | undefined
-  indexKey?: string | number | undefined
-}
+> = NodeProps<TNode>
 
 export type MarkstreamSvelteComponent<
   TProps extends object = MarkstreamCustomComponentProps,

@@ -1,17 +1,15 @@
 <script lang="ts">
   import type { LinkNode as ParserLinkNode } from 'stream-markdown-parser'
-  import type { IndexedNodeProps } from '../types/componentProps'
+  import type { NodeProps } from '../types/componentProps'
   import { sanitizeHtmlAttrs, shouldOpenLinkInNewTab } from 'stream-markdown-parser'
   import { hideTooltip, showTooltipForAnchor } from '../tooltip/singletonTooltip'
   import RenderChildren from './RenderChildren.svelte'
-
-  type Props = IndexedNodeProps<ParserLinkNode>
 
   let {
     node,
     context = undefined,
     indexKey = undefined,
-  }: Props = $props()
+  }: NodeProps<ParserLinkNode> = $props()
 
   let href = $derived(sanitizeHtmlAttrs({ href: node.href }, 'safe', 'a').href ?? '')
   let title = $derived(node.title || href)

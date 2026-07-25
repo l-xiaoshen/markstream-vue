@@ -1,13 +1,13 @@
 <script lang="ts">
   import type { ListNode as ParserListNode } from 'stream-markdown-parser'
-  import type { IndexedNodeProps } from '../types/componentProps'
+  import type { NodeProps } from '../types/componentProps'
   import RenderChildren from './RenderChildren.svelte'
 
   let {
     node,
     context = undefined,
     indexKey = undefined,
-  }: IndexedNodeProps<ParserListNode> = $props()
+  }: NodeProps<ParserListNode> = $props()
 
   let ordered = $derived(node.ordered)
   let start = $derived(node.start)

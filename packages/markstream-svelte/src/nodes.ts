@@ -35,8 +35,4 @@ export { default as TableNode } from './components/TableNode.svelte'
 export { default as TextNode } from './components/TextNode.svelte'
 export { default as ThematicBreakNode } from './components/ThematicBreakNode.svelte'
 export { default as VmrContainerNode } from './components/VmrContainerNode.svelte'
-export type {
-  ContextualNodeProps,
-  IndexedNodeProps,
-  NodeProps,
-} from './types/componentProps'
+export type { NodeProps } from './types/componentProps'

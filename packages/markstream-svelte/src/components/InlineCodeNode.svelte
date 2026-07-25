@@ -1,13 +1,13 @@
 <script lang="ts">
   import type { InlineCodeNode as ParserInlineCodeNode } from 'stream-markdown-parser'
-  import type { IndexedNodeProps } from '../types/componentProps'
+  import type { NodeProps } from '../types/componentProps'
   import { StreamingText } from '../state/streaming/StreamingText.svelte'
 
   let {
     node,
     context = undefined,
     indexKey = undefined,
-  }: IndexedNodeProps<ParserInlineCodeNode> = $props()
+  }: NodeProps<ParserInlineCodeNode> = $props()
 
   const code = $derived(node.code)
   const streamKey = $derived(

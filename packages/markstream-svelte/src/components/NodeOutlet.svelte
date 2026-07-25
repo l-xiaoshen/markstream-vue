@@ -5,8 +5,7 @@
     HtmlInlineNode as ParserHtmlInlineNode,
     TextNode as ParserTextNode,
   } from 'stream-markdown-parser'
-  import type { MarkstreamCustomComponentProps } from '../customComponents'
-  import type { IndexedNodeProps } from '../types/componentProps'
+  import type { NodeProps } from '../types/componentProps'
   import type { ParsedMarkdownNode } from '../types/nodes'
   import type { SvelteRenderContext } from '../types/renderer'
   import {
@@ -63,17 +62,20 @@
     node,
     context = EMPTY_RENDER_CONTEXT,
     indexKey = undefined,
-  }: IndexedNodeProps<ParsedMarkdownNode<TCustomNode>> = $props()
+  }: NodeProps<ParsedMarkdownNode<TCustomNode>> = $props()
 
   let resolvedIndexKey = $derived(indexKey ?? 'node')
+  let standardProps = $derived({
+    context,
+    indexKey: resolvedIndexKey,
+  })
   let customComponentMap = $derived(context.customComponents || getCustomNodeComponents(context.customId))
   let CustomComponent = $derived(resolveNodeOutletCustomComponent(node, context, customComponentMap))
   let customNode = $derived(coerceCustomHtmlNode(node))
   let customComponentProps = $derived({
     node: customNode,
-    context,
-    indexKey: resolvedIndexKey,
-  } satisfies MarkstreamCustomComponentProps<typeof customNode>)
+    ...standardProps,
+  } satisfies NodeProps<typeof customNode>)
   let htmlTag = $derived(resolveHtmlTag(node))
   let shouldEscapeHtmlTag = $derived(resolveShouldEscapeHtmlTag())
 
@@ -107,83 +109,83 @@
 {#if CustomComponent}
   <CustomComponent {...customComponentProps} />
 {:else if isNodeType(node, 'text') || isNodeType(node, 'text_special')}
-  <TextNode {node} {context} indexKey={resolvedIndexKey} />
+  <TextNode {node} {...standardProps} />
 {:else if isNodeType(node, 'paragraph')}
-  <ParagraphNode {node} {context} indexKey={resolvedIndexKey} />
+  <ParagraphNode {node} {...standardProps} />
 {:else if isNodeType(node, 'inline')}
   <RenderChildren nodes={node.children} {context} prefix={`${resolvedIndexKey}-inline`} />
 {:else if isNodeType(node, 'heading')}
-  <HeadingNode {node} {context} indexKey={resolvedIndexKey} />
+  <HeadingNode {node} {...standardProps} />
 {:else if isNodeType(node, 'blockquote')}
-  <BlockquoteNode {node} {context} indexKey={resolvedIndexKey} />
+  <BlockquoteNode {node} {...standardProps} />
 {:else if isNodeType(node, 'list')}
-  <ListNode {node} {context} indexKey={resolvedIndexKey} />
+  <ListNode {node} {...standardProps} />
 {:else if isNodeType(node, 'list_item')}
-  <ListItemNode {node} {context} indexKey={resolvedIndexKey} />
+  <ListItemNode {node} {...standardProps} />
 {:else if isNodeType(node, 'table')}
-  <TableNode {node} {context} />
+  <TableNode {node} {...standardProps} />
 {:else if isNodeType(node, 'definition_list')}
-  <DefinitionListNode {node} {context} />
+  <DefinitionListNode {node} {...standardProps} />
 {:else if isNodeType(node, 'footnote')}
-  <FootnoteNode {node} {context} indexKey={resolvedIndexKey} />
+  <FootnoteNode {node} {...standardProps} />
 {:else if isNodeType(node, 'footnote_reference')}
-  <FootnoteReferenceNode {node} />
+  <FootnoteReferenceNode {node} {...standardProps} />
 {:else if isNodeType(node, 'footnote_anchor')}
-  <FootnoteAnchorNode {node} />
+  <FootnoteAnchorNode {node} {...standardProps} />
 {:else if isNodeType(node, 'admonition')}
-  <AdmonitionNode {node} {context} />
+  <AdmonitionNode {node} {...standardProps} />
 {:else if isNodeType(node, 'hardbreak')}
-  <HardBreakNode />
+  <HardBreakNode {node} {...standardProps} />
 {:else if isNodeType(node, 'link')}
-  <LinkNode {node} {context} indexKey={resolvedIndexKey} />
+  <LinkNode {node} {...standardProps} />
 {:else if isNodeType(node, 'image')}
-  <ImageNode {node} {context} />
+  <ImageNode {node} {...standardProps} />
 {:else if isNodeType(node, 'inline_code')}
-  <InlineCodeNode {node} {context} indexKey={resolvedIndexKey} />
+  <InlineCodeNode {node} {...standardProps} />
 {:else if isNodeType(node, 'strong')}
-  <StrongNode {node} {context} indexKey={resolvedIndexKey} />
+  <StrongNode {node} {...standardProps} />
 {:else if isNodeType(node, 'emphasis')}
-  <EmphasisNode {node} {context} indexKey={resolvedIndexKey} />
+  <EmphasisNode {node} {...standardProps} />
 {:else if isNodeType(node, 'strikethrough')}
-  <StrikethroughNode {node} {context} indexKey={resolvedIndexKey} />
+  <StrikethroughNode {node} {...standardProps} />
 {:else if isNodeType(node, 'highlight')}
-  <HighlightNode {node} {context} indexKey={resolvedIndexKey} />
+  <HighlightNode {node} {...standardProps} />
 {:else if isNodeType(node, 'insert')}
-  <InsertNode {node} {context} indexKey={resolvedIndexKey} />
+  <InsertNode {node} {...standardProps} />
 {:else if isNodeType(node, 'subscript')}
-  <SubscriptNode {node} {context} indexKey={resolvedIndexKey} />
+  <SubscriptNode {node} {...standardProps} />
 {:else if isNodeType(node, 'superscript')}
-  <SuperscriptNode {node} {context} indexKey={resolvedIndexKey} />
+  <SuperscriptNode {node} {...standardProps} />
 {:else if isNodeType(node, 'checkbox') || isNodeType(node, 'checkbox_input')}
-  <CheckboxNode {node} />
+  <CheckboxNode {node} {...standardProps} />
 {:else if isNodeType(node, 'emoji')}
-  <EmojiNode {node} />
+  <EmojiNode {node} {...standardProps} />
 {:else if isNodeType(node, 'reference')}
-  <ReferenceNode {node} {context} />
+  <ReferenceNode {node} {...standardProps} />
 {:else if isNodeType(node, 'html_block')}
   {#if shouldEscapeHtmlTag}
-    <TextNode node={createEscapedTextNode(node)} {context} indexKey={resolvedIndexKey} />
+    <TextNode node={createEscapedTextNode(node)} {...standardProps} />
   {:else}
-    <HtmlBlockNode node={coerceBuiltinHtmlNode(node)} {context} />
+    <HtmlBlockNode node={coerceBuiltinHtmlNode(node)} {...standardProps} />
   {/if}
 {:else if isNodeType(node, 'html_inline')}
   {#if shouldEscapeHtmlTag}
-    <TextNode node={createEscapedTextNode(node)} {context} indexKey={resolvedIndexKey} />
+    <TextNode node={createEscapedTextNode(node)} {...standardProps} />
   {:else}
-    <HtmlInlineNode node={coerceBuiltinHtmlNode(node)} {context} />
+    <HtmlInlineNode node={coerceBuiltinHtmlNode(node)} {...standardProps} />
   {/if}
 {:else if isNodeType(node, 'vmr_container')}
-  <VmrContainerNode {node} {context} />
+  <VmrContainerNode {node} {...standardProps} />
 {:else if isNodeType(node, 'thematic_break')}
-  <ThematicBreakNode />
+  <ThematicBreakNode {node} {...standardProps} />
 {:else if isNodeType(node, 'math_inline')}
-  <MathInlineNode {node} {context} />
+  <MathInlineNode {node} {...standardProps} />
 {:else if isNodeType(node, 'math_block')}
-  <MathBlockNode {node} {context} />
+  <MathBlockNode {node} {...standardProps} />
 {:else if isNodeType(node, 'code_block')}
-  <CodeBlockOutlet {node} {context} indexKey={resolvedIndexKey} />
+  <CodeBlockOutlet {node} {...standardProps} />
 {:else if isNodeType(node, 'label_open') || isNodeType(node, 'label_close')}
   <span hidden></span>
 {:else}
-  <FallbackComponent {node} {context} />
+  <FallbackComponent {node} {...standardProps} />
 {/if}

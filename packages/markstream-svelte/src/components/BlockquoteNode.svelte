@@ -1,13 +1,13 @@
 <script lang="ts">
   import type { BlockquoteNode as ParserBlockquoteNode } from 'stream-markdown-parser'
-  import type { IndexedNodeProps } from '../types/componentProps'
+  import type { NodeProps } from '../types/componentProps'
   import RenderChildren from './RenderChildren.svelte'
 
   let {
     node,
     context = undefined,
     indexKey = undefined,
-  }: IndexedNodeProps<ParserBlockquoteNode> = $props()
+  }: NodeProps<ParserBlockquoteNode> = $props()
   let cite = $derived(resolveCite(node))
 
   function resolveCite(blockquote: ParserBlockquoteNode): string {

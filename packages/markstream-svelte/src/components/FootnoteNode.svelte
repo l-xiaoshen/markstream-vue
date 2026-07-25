@@ -1,13 +1,13 @@
 <script lang="ts">
   import type { FootnoteNode as ParserFootnoteNode } from 'stream-markdown-parser'
-  import type { IndexedNodeProps } from '../types/componentProps'
+  import type { NodeProps } from '../types/componentProps'
   import RenderChildren from './RenderChildren.svelte'
 
   let {
     node,
     context = undefined,
     indexKey = undefined,
-  }: IndexedNodeProps<ParserFootnoteNode> = $props()
+  }: NodeProps<ParserFootnoteNode> = $props()
 
   let id = $derived(node.id)
   let children = $derived(node.children)

@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { ParagraphNode as ParserParagraphNode } from 'stream-markdown-parser'
-  import type { IndexedNodeProps } from '../types/componentProps'
+  import type { NodeProps } from '../types/componentProps'
   import RenderChildren from './RenderChildren.svelte'
   import NodeOutlet from './NodeOutlet.svelte'
   import { splitParagraphChildren } from './shared/node-helpers'
@@ -9,7 +9,7 @@
     node,
     context = undefined,
     indexKey = undefined
-  }: IndexedNodeProps<ParserParagraphNode> = $props()
+  }: NodeProps<ParserParagraphNode> = $props()
 
   let prefix = $derived(String(indexKey ?? 'p'))
   let parts = $derived(splitParagraphChildren(node.children))

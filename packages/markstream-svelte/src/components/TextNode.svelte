@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { TextNode as ParserTextNode } from 'stream-markdown-parser'
-  import type { IndexedNodeProps } from '../types/componentProps'
+  import type { NodeProps } from '../types/componentProps'
   import type { TextSpecialNode } from '../types/nodes'
   import { StreamingText } from '../state/streaming/StreamingText.svelte'
 
@@ -8,7 +8,7 @@
     node,
     context = undefined,
     indexKey = undefined,
-  }: IndexedNodeProps<ParserTextNode | TextSpecialNode> = $props()
+  }: NodeProps<ParserTextNode | TextSpecialNode> = $props()
 
   const content = $derived(node.content)
   const centered = $derived(node.type === 'text' && node.center === true)

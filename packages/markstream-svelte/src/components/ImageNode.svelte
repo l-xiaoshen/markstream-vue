@@ -1,17 +1,15 @@
 <script lang="ts">
   import type { ImageNode as ParserImageNode } from 'stream-markdown-parser'
-  import type { ContextualNodeProps } from '../types/componentProps'
+  import type { NodeProps } from '../types/componentProps'
   import { sanitizeImageSrc } from 'stream-markdown-parser'
   import { getSafeI18n } from '../i18n/safeI18n'
 
   import { untrack } from 'svelte'
 
-  type Props = ContextualNodeProps<ParserImageNode>
-
   let {
     node,
     context = undefined,
-  }: Props = $props()
+  }: NodeProps<ParserImageNode> = $props()
 
   const { t } = getSafeI18n()
   const fallbackSrc = $derived(context?.imageProps?.fallbackSrc ?? '')

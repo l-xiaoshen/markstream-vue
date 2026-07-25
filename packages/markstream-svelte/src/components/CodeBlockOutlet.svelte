@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { CodeBlockNode as ParserCodeBlockNode } from 'stream-markdown-parser'
-  import type { IndexedNodeProps } from '../types/componentProps'
+  import type { NodeProps } from '../types/componentProps'
   import type { SvelteRenderContext } from '../types/renderer'
   import CodeBlockNode from './CodeBlockNode.svelte'
   import D2BlockNode from './D2BlockNode.svelte'
@@ -15,24 +15,25 @@
     node,
     context = EMPTY_RENDER_CONTEXT,
     indexKey = undefined,
-  }: IndexedNodeProps<ParserCodeBlockNode> = $props()
+  }: NodeProps<ParserCodeBlockNode> = $props()
 
   const codeMode = $derived(resolveNodeOutletCodeMode(node, context))
+  const standardProps = $derived({ node, context, indexKey })
   const codeBlockInstanceKey = $derived(
     `${String(indexKey ?? 'node')}:${node.language}:${node.diff ? 'diff' : 'code'}`,
   )
 </script>
 
 {#if codeMode === 'mermaid'}
-  <MermaidBlockNode {node} {context} />
+  <MermaidBlockNode {...standardProps} />
 {:else if codeMode === 'd2'}
-  <D2BlockNode {node} {context} />
+  <D2BlockNode {...standardProps} />
 {:else if codeMode === 'infographic'}
-  <InfographicBlockNode {node} {context} />
+  <InfographicBlockNode {...standardProps} />
 {:else if codeMode === 'pre'}
-  <PreCodeNode {node} />
+  <PreCodeNode {...standardProps} />
 {:else}
   {#key codeBlockInstanceKey}
-    <CodeBlockNode {node} {context} />
+    <CodeBlockNode {...standardProps} />
   {/key}
 {/if}

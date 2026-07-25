@@ -1,12 +1,12 @@
 <script lang="ts">
   import type { MathInlineNode as ParserMathInlineNode } from 'stream-markdown-parser'
-  import type { ContextualNodeProps } from '../types/componentProps'
+  import type { NodeProps } from '../types/componentProps'
   import { KatexRenderer } from '../state/blocks/KatexRenderer.svelte'
 
   let {
     node,
     context = undefined,
-  }: ContextualNodeProps<ParserMathInlineNode> = $props()
+  }: NodeProps<ParserMathInlineNode> = $props()
 
   const source = $derived(node.content || node.markup || node.raw)
   const raw = $derived(node.raw || source)

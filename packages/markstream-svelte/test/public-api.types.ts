@@ -19,6 +19,7 @@ import type {
   ImageNode,
   InfographicBlockNode,
   MermaidBlockNode,
+  NodeProps,
 } from '../dist/nodes.js'
 import type { KaTeXWorkerClient } from '../dist/workers.js'
 import {
@@ -69,7 +70,11 @@ declare const codeNode: ComponentProps<typeof CodeBlockNode>['node']
 declare const imageNode: ComponentProps<typeof ImageNode>['node']
 declare const renderContext: SvelteRenderContext
 
-const standardRichProps = { context: renderContext, node: codeNode }
+const standardRichProps = {
+  context: renderContext,
+  indexKey: 'code-0',
+  node: codeNode,
+} satisfies NodeProps<typeof codeNode>
 const codeBlockComponentProps: ComponentProps<typeof CodeBlockNode> = standardRichProps
 const d2ComponentProps: ComponentProps<typeof D2BlockNode> = standardRichProps
 const infographicComponentProps: ComponentProps<typeof InfographicBlockNode> = standardRichProps

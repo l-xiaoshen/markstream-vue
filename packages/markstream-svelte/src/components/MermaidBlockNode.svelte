@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { CodeBlockNode as ParserCodeBlockNode } from 'stream-markdown-parser'
-  import type { ContextualNodeProps } from '../types/componentProps'
+  import type { NodeProps } from '../types/componentProps'
   import { getSafeI18n } from '../i18n/safeI18n'
   import { MermaidBlockState } from '../state/blocks/MermaidBlockState.svelte'
   import MermaidLanguageIcon from './shared/MermaidLanguageIcon.svelte'
@@ -9,12 +9,10 @@
   import RichBlockModeToggle from './shared/RichBlockModeToggle.svelte'
   import RichBlockZoomControls from './shared/RichBlockZoomControls.svelte'
 
-  type Props = ContextualNodeProps<ParserCodeBlockNode>
-
   let {
     node,
     context = undefined,
-  }: Props = $props()
+  }: NodeProps<ParserCodeBlockNode> = $props()
 
   const { t } = getSafeI18n()
   const options = $derived(context?.mermaidProps)

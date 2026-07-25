@@ -15,7 +15,6 @@
     "katex": "^0.16.47",
     "markstream-svelte": "workspace:*",
     "mermaid": ">=11.16.0",
-    "stream-markdown": "latest",
     "stream-markdown-parser": "workspace:*",
     "stream-monaco": "latest",
     "svelte": "^5.56.7"

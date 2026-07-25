@@ -1,4 +1,3 @@
-import type { PluginOption } from 'vite'
 import path from 'node:path'
 import { svelte } from '@sveltejs/vite-plugin-svelte'
 import { defineConfig } from 'vite'
@@ -28,6 +27,14 @@ export default defineConfig({
       {
         find: /^markstream-svelte\/index\.css$/,
         replacement: path.resolve(__dirname, '../packages/markstream-svelte/src/index.css'),
+      },
+      {
+        find: /^markstream-svelte\/nodes$/,
+        replacement: path.resolve(__dirname, '../packages/markstream-svelte/src/nodes.ts'),
+      },
+      {
+        find: /^markstream-svelte\/workers$/,
+        replacement: path.resolve(__dirname, '../packages/markstream-svelte/src/workers.ts'),
       },
       {
         find: 'markstream-svelte',
@@ -64,6 +71,6 @@ export default defineConfig({
       customDistPath(_root, buildOutDir) {
         return path.resolve(buildOutDir, 'monacoeditorwork')
       },
-    }) as unknown as PluginOption,
+    }),
   ],
 })

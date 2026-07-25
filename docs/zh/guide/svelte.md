@@ -79,21 +79,26 @@ KaTeX 和 Mermaid worker 入口与其它框架一致：
 
 ```svelte
 <script lang="ts">
+  import type {
+    CustomMarkdownNode,
+    MarkstreamCustomComponentProps,
+  } from 'markstream-svelte'
   import MarkdownRender from 'markstream-svelte'
 
   let {
     node,
-    customId = undefined,
-  }: {
-    node: any
-    customId?: string
-  } = $props()
+    context = undefined,
+  }: MarkstreamCustomComponentProps<
+    CustomMarkdownNode<'thinking'>
+  > = $props()
 </script>
 
 <section class="thinking-node">
   <MarkdownRender
-    content={String(node?.content ?? '')}
-    {customId}
+    content={node.content}
+    customId={context?.customId}
+    isDark={context?.isDark}
+    codeBlockProps={context?.codeBlockProps}
     customHtmlTags={['thinking']}
   />
 </section>

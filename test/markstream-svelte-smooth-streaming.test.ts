@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { resolveParsedNodes } from '../packages/markstream-svelte/src/components/shared/node-helpers'
+import { resolveParsedNodes } from '../packages/markstream-svelte/src/parseMarkdownToNodes'
 
 describe('markstream-svelte smooth streaming props', () => {
   it('accepts smoothStreaming and smoothStreamingOptions in NodeRendererProps', () => {

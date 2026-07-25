@@ -577,9 +577,11 @@ describe('mermaid block SVG sanitizer', () => {
     }
 
     vi.doMock('../../packages/markstream-svelte/src/optional/mermaid', () => ({
-      getMermaid: vi.fn(async () => fakeMermaid),
+      mermaidRuntime: {
+        get: vi.fn(async () => fakeMermaid),
+      },
     }))
-    vi.doMock('../../packages/markstream-svelte/src/workers/mermaidWorkerClient', () => workerMock)
+    vi.doMock('../../packages/markstream-svelte/src/workers/mermaidWorkerRuntime', () => workerMock)
     vi.doMock('../../packages/markstream-angular/src/optional/mermaid', () => ({
       getMermaid: vi.fn(async () => fakeMermaid),
     }))

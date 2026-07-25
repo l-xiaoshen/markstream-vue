@@ -1,3 +1,5 @@
+// TODO: Add strict runtime value validation after discussing validation library options with the maintainers.
+
 export interface KaTeXWorkerInitRequest {
   type: 'init'
   debug: boolean

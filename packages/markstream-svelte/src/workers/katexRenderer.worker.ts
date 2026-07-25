@@ -3,12 +3,12 @@
 import type {
   KaTeXWorkerRenderedResponse,
   KaTeXWorkerRenderErrorResponse,
+  KaTeXWorkerRequest,
   KaTeXWorkerUncaughtErrorResponse,
 } from '../types/runtimeWorkers'
 import katex from 'katex'
 import { toErrorMessage } from '../types/runtimeErrors'
-import { isKaTeXWorkerRequest } from './internal/workerProtocol'
-import 'katex/dist/contrib/mhchem'
+import 'katex/contrib/mhchem'
 
 declare const self: DedicatedWorkerGlobalScope
 
@@ -16,10 +16,8 @@ const state = {
   debug: false,
 }
 
-self.addEventListener('message', (event: MessageEvent<unknown>) => {
+self.addEventListener('message', (event: MessageEvent<KaTeXWorkerRequest>) => {
   const data = event.data
-  if (!isKaTeXWorkerRequest(data))
-    return
   if (data.type === 'init') {
     state.debug = data.debug
     return

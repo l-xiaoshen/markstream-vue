@@ -1,6 +1,7 @@
 import type {
   KaTeXWorkerInitRequest,
   KaTeXWorkerRenderRequest,
+  KaTeXWorkerResponse,
   WorkerLoad,
 } from '../types/runtimeWorkers'
 import type {
@@ -21,7 +22,6 @@ import { normalizeKaTeXRenderInput } from '../utils/normalizeKaTeXRenderInput'
 import { createKaTeXBackpressureController } from './internal/katexBackpressure'
 import { createKaTeXPendingRequests } from './internal/katexPendingRequests'
 import { createKaTeXRenderCache } from './internal/katexRenderCache'
-import { isKaTeXWorkerResponse } from './internal/workerProtocol'
 
 export interface KaTeXWorkerClient {
   clearWorker: () => void
@@ -81,13 +81,11 @@ export function createKaTeXWorkerClient(
     state.workerInitError = null
     const current = nextWorker
 
-    current.onmessage = (event: MessageEvent<unknown>) => {
+    current.onmessage = (event: MessageEvent<KaTeXWorkerResponse>) => {
       if (state.worker !== current)
         return
 
       const response = event.data
-      if (!isKaTeXWorkerResponse(response))
-        return
       if (response.type === 'worker-error') {
         pending.rejectAll(new WorkerLifecycleError(
           'WorkerError',

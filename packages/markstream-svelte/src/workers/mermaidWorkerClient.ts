@@ -3,6 +3,7 @@ import type {
   MermaidWorkerInitRequest,
   MermaidWorkerPayload,
   MermaidWorkerRequest,
+  MermaidWorkerResponse,
   MermaidWorkerTheme,
   WorkerLoad,
 } from '../types/runtimeWorkers'
@@ -16,7 +17,6 @@ import {
   WorkerProtocolError,
 } from '../types/runtimeErrors'
 import { createMermaidPendingRequests } from './internal/mermaidPendingRequests'
-import { isMermaidWorkerResponse } from './internal/workerProtocol'
 
 export interface MermaidWorkerClientOptions {
   isEnabled?: () => boolean
@@ -67,13 +67,11 @@ export function createMermaidWorkerClient(
     state.workerInitError = null
     const current = nextWorker
 
-    current.onmessage = (event: MessageEvent<unknown>) => {
+    current.onmessage = (event: MessageEvent<MermaidWorkerResponse>) => {
       if (state.worker !== current)
         return
 
       const response = event.data
-      if (!isMermaidWorkerResponse(response))
-        return
       const expectedAction = pending.actionFor(response.id)
       if (!expectedAction)
         return

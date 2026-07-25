@@ -5,12 +5,6 @@ import {
 } from '../../src/workers/internal/cdnWorker'
 import { createKaTeXBackpressureController } from '../../src/workers/internal/katexBackpressure'
 import { createKaTeXRenderCache } from '../../src/workers/internal/katexRenderCache'
-import {
-  isKaTeXWorkerRequest,
-  isKaTeXWorkerResponse,
-  isMermaidWorkerRequest,
-  isMermaidWorkerResponse,
-} from '../../src/workers/internal/workerProtocol'
 import { buildKaTeXCDNWorkerSource } from '../../src/workers/katexCdnWorker'
 import { buildMermaidCDNWorkerSource } from '../../src/workers/mermaidCdnWorker'
 
@@ -69,52 +63,5 @@ describe('kaTeX worker state helpers', () => {
       maxRetries: 3,
     })
     expect(controller.resolveOptions({ maxRetries: 99 }).maxRetries).toBe(8)
-  })
-})
-
-describe('worker protocol guards', () => {
-  it('narrows KaTeX requests and responses', () => {
-    expect(isKaTeXWorkerRequest({
-      type: 'render',
-      id: 'katex-1',
-      content: 'x',
-      displayMode: true,
-    })).toBe(true)
-    expect(isKaTeXWorkerRequest({
-      type: 'render',
-      id: 'katex-1',
-      content: 'x',
-      displayMode: 'yes',
-    })).toBe(false)
-    expect(isKaTeXWorkerResponse({
-      type: 'rendered',
-      id: 'katex-1',
-      content: 'x',
-      displayMode: true,
-      html: '<span>x</span>',
-    })).toBe(true)
-  })
-
-  it('keeps Mermaid actions paired with their result types', () => {
-    expect(isMermaidWorkerRequest({
-      type: 'request',
-      action: 'canParse',
-      id: 'mermaid-1',
-      payload: { code: 'graph TD', theme: 'dark' },
-    })).toBe(true)
-    expect(isMermaidWorkerResponse({
-      type: 'result',
-      action: 'canParse',
-      id: 'mermaid-1',
-      ok: true,
-      result: true,
-    })).toBe(true)
-    expect(isMermaidWorkerResponse({
-      type: 'result',
-      action: 'canParse',
-      id: 'mermaid-1',
-      ok: true,
-      result: 'true',
-    })).toBe(false)
   })
 })

@@ -4,12 +4,12 @@ import type {
   MermaidWorkerCanParseResponse,
   MermaidWorkerErrorResponse,
   MermaidWorkerFindPrefixResponse,
+  MermaidWorkerRequest,
   MermaidWorkerResponse,
   MermaidWorkerTheme,
 } from '../types/runtimeWorkers'
 import mermaid from 'mermaid'
 import { toErrorMessage } from '../types/runtimeErrors'
-import { isMermaidWorkerRequest } from './internal/workerProtocol'
 
 declare const self: DedicatedWorkerGlobalScope
 
@@ -74,10 +74,8 @@ async function findLastRenderablePrefix(baseCode: string, theme: MermaidWorkerTh
   return [...head, ...lines.slice(headerIndex + 1, lastGood)].join('\n')
 }
 
-self.onmessage = async (event: MessageEvent<unknown>) => {
+self.onmessage = async (event: MessageEvent<MermaidWorkerRequest>) => {
   const message = event.data
-  if (!isMermaidWorkerRequest(message))
-    return
   if (message.type === 'init')
     return
 

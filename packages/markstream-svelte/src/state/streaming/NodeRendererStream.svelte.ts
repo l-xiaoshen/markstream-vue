@@ -13,6 +13,7 @@ interface NodeRendererStreamOptions {
   getSmoothStreaming: () => boolean | 'auto'
   getSmoothStreamingOptions: () => SmoothMarkdownStreamOptions | undefined
   getTypewriter: () => boolean
+  getMaxLiveNodes: () => number
 }
 
 export class NodeRendererStream {
@@ -26,6 +27,7 @@ export class NodeRendererStream {
   #smoothStreamingEligible: boolean
   #sourceSynced: boolean
   #typewriter: boolean
+  #maxLiveNodes: number
 
   hasProvidedNodes: boolean
   smoothStreamingEnabled: boolean
@@ -44,6 +46,7 @@ export class NodeRendererStream {
     this.#requestedFinal = $derived(this.options.getRequestedFinal())
     this.#smoothStreaming = $derived(this.options.getSmoothStreaming())
     this.#typewriter = $derived(this.options.getTypewriter())
+    this.#maxLiveNodes = $derived(this.options.getMaxLiveNodes())
     this.hasProvidedNodes = $derived(this.options.getHasProvidedNodes())
     this.#smoothStreamingEligible = $derived.by(() => {
       if (this.#smoothStreaming === false || this.hasProvidedNodes)
@@ -52,7 +55,10 @@ export class NodeRendererStream {
         return false
       if (this.#smoothStreaming === true)
         return true
-      return this.#typewriter || this.#requestedFinal === false || this.#observedStreaming
+      return this.#typewriter
+        || this.#maxLiveNodes <= 0
+        || this.#requestedFinal === false
+        || this.#observedStreaming
     })
     this.smoothStreamingEnabled = $derived(
       (this.#smoothStreaming === true || this.#mounted) && this.#smoothStreamingEligible,

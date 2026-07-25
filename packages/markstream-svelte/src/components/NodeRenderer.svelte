@@ -58,6 +58,9 @@
     initialRenderBatchSize = 40,
     renderBatchSize = 80,
     renderBatchDelay = 16,
+    renderBatchBudgetMs = 6,
+    renderBatchIdleTimeoutMs = 120,
+    maxLiveNodes = 320,
     allowHtml = true,
     smoothStreaming = 'auto',
     smoothStreamingOptions = undefined,
@@ -82,6 +85,7 @@
     getSmoothStreaming: () => smoothStreaming,
     getSmoothStreamingOptions: () => smoothStreamingOptions,
     getTypewriter: () => typewriter,
+    getMaxLiveNodes: () => maxLiveNodes,
   })
 
   const rendererProps = $derived({
@@ -118,6 +122,9 @@
     initialRenderBatchSize,
     renderBatchSize,
     renderBatchDelay,
+    renderBatchBudgetMs,
+    renderBatchIdleTimeoutMs,
+    maxLiveNodes,
     allowHtml,
     smoothStreaming,
     smoothStreamingOptions,
@@ -170,6 +177,8 @@
       initialSize: initialRenderBatchSize,
       size: renderBatchSize,
       delayMs: renderBatchDelay,
+      budgetMs: renderBatchBudgetMs,
+      idleTimeoutMs: renderBatchIdleTimeoutMs,
     }),
   )
   const renderedNodes = $derived(parsedNodes.slice(0, renderBatch.count))

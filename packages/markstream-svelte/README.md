@@ -256,9 +256,9 @@ workers and global UMD discovery are not supported.
 - `getSafeI18n()` replaces the former hook-shaped `useSafeI18n()` helper.
 - Node renderers and custom components now receive only their standard
   `node`/`context`/`indexKey` props. Renderer settings are read from `context`.
-- Inert viewport/windowing props were removed. `batchRendering`,
-  `smoothStreaming`, and `typewriter` are the supported progressive-rendering
-  controls.
+- `batchRendering` retains its batch budget and idle timeout controls, and
+  `maxLiveNodes <= 0` remains a supported `smoothStreaming="auto"` signal.
+  Inert viewport/windowing props were removed.
 - Svelte 5.33.1 is now the minimum because state models declare lazy derived
   fields in class constructors.
 - Optional renderer overrides use the exported runtime singletons' `setLoader()`

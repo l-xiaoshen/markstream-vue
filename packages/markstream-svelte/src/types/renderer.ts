@@ -160,6 +160,9 @@ export interface NodeRendererProps<TCustomNode extends BaseNode = never> {
   initialRenderBatchSize?: number | undefined
   renderBatchSize?: number | undefined
   renderBatchDelay?: number | undefined
+  renderBatchBudgetMs?: number | undefined
+  renderBatchIdleTimeoutMs?: number | undefined
+  maxLiveNodes?: number | undefined
   allowHtml?: boolean | undefined
   smoothStreaming?: boolean | 'auto' | undefined
   smoothStreamingOptions?: SmoothMarkdownStreamOptions | undefined

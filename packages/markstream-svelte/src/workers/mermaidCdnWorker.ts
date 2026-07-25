@@ -1,11 +1,19 @@
-export type MermaidCDNWorkerMode = 'classic' | 'module'
+import type { MermaidConfig } from 'mermaid'
+import type { MermaidWorkerInitRequest } from '../types/runtimeWorkers'
+import {
+  createModuleWorkerFromSource,
+  stringifyForWorker,
+  WORKER_ERROR_MESSAGE_SOURCE,
+} from './internal/cdnWorker'
+
+export type MermaidCDNWorkerMode = 'module'
 
 export interface MermaidCDNWorkerOptions {
   mermaidUrl: string
   mode?: MermaidCDNWorkerMode
   debug?: boolean
   workerOptions?: WorkerOptions
-  initializeOptions?: Record<string, any>
+  initializeOptions?: MermaidConfig
 }
 
 export interface MermaidCDNWorkerHandle {
@@ -14,53 +22,43 @@ export interface MermaidCDNWorkerHandle {
   source: string
 }
 
-function stringifyForWorker(value: any) {
-  return JSON.stringify(value)
-}
-
 export function buildMermaidCDNWorkerSource(options: MermaidCDNWorkerOptions): string {
-  const mode: MermaidCDNWorkerMode = options.mode ?? 'module'
   const mermaidUrlLiteral = stringifyForWorker(options.mermaidUrl)
-  const initLiteral = stringifyForWorker({
+  const initializeOptions: MermaidConfig = {
     startOnLoad: false,
     securityLevel: 'strict',
     flowchart: { htmlLabels: false },
-    ...(options.initializeOptions || {}),
-  })
+    ...(options.initializeOptions ?? {}),
+  }
+  const initLiteral = stringifyForWorker(initializeOptions)
 
-  const sharedLogic = `
-let DEBUG = false
-let mermaid = null
-let mermaidLoadError = null
+  return `
+const state = {
+  debug: false,
+  initialized: false,
+  loadError: null,
+  loadPromise: null,
+  mermaid: null,
+}
 
 function normalizeMermaidModule(mod) {
-  if (!mod)
-    return mod
-  const candidate = mod && mod.default ? mod.default : mod
-  if (candidate && (typeof candidate.render === 'function' || typeof candidate.parse === 'function' || typeof candidate.initialize === 'function'))
+  const candidate = mod?.default ?? mod
+  if (
+    candidate
+    && typeof candidate.initialize === 'function'
+    && typeof candidate.parse === 'function'
+  ) {
     return candidate
-  if (candidate && candidate.mermaidAPI && (typeof candidate.mermaidAPI.render === 'function' || typeof candidate.mermaidAPI.parse === 'function')) {
-    const api = candidate.mermaidAPI
-    return {
-      ...candidate,
-      render: api.render ? api.render.bind(api) : undefined,
-      parse: api.parse ? api.parse.bind(api) : undefined,
-      initialize: (opts) => {
-        if (typeof candidate.initialize === 'function')
-          return candidate.initialize(opts)
-        return api.initialize ? api.initialize(opts) : undefined
-      },
-    }
   }
-  if (mod && mod.mermaid && typeof mod.mermaid.parse === 'function')
-    return mod.mermaid
-  return candidate
+  return null
 }
+
+${WORKER_ERROR_MESSAGE_SOURCE}
 
 function applyThemeTo(code, theme) {
   const themeValue = theme === 'dark' ? 'dark' : 'default'
   const themeConfig = \`%%{init: {"theme": "\${themeValue}"}}%%\\n\`
-  const trimmed = String(code || '').trimStart()
+  const trimmed = code.trimStart()
   if (trimmed.startsWith('%%{'))
     return code
   return themeConfig + code
@@ -68,27 +66,24 @@ function applyThemeTo(code, theme) {
 
 function findHeaderIndex(lines) {
   const headerRe = /^(?:graph|flowchart|flowchart\\s+tb|flowchart\\s+lr|sequenceDiagram|gantt|classDiagram|stateDiagram(?:-v2)?|erDiagram|journey|pie|quadrantChart|timeline|xychart(?:-beta)?)\\b/
-  for (let i = 0; i < lines.length; i++) {
-    const line = (lines[i] || '').trim()
+  for (let index = 0; index < lines.length; index += 1) {
+    const line = lines[index].trim()
     if (!line || line.startsWith('%%'))
       continue
     if (headerRe.test(line))
-      return i
+      return index
   }
   return -1
 }
 
 async function canParse(code, theme) {
   const themed = applyThemeTo(code, theme)
-  if (mermaid && typeof mermaid.parse === 'function') {
-    await mermaid.parse(themed)
-    return true
-  }
-  throw new Error('mermaid.parse not available in worker')
+  await state.mermaid.parse(themed)
+  return true
 }
 
 async function findLastRenderablePrefix(baseCode, theme) {
-  const lines = String(baseCode || '').split('\\n')
+  const lines = baseCode.split('\\n')
   const headerIndex = findHeaderIndex(lines)
   if (headerIndex === -1)
     return null
@@ -99,9 +94,9 @@ async function findLastRenderablePrefix(baseCode, theme) {
   let high = lines.length
   let lastGood = headerIndex + 1
   let tries = 0
-  const MAX_TRIES = 12
+  const maxTries = 12
 
-  while (low <= high && tries < MAX_TRIES) {
+  while (low <= high && tries < maxTries) {
     const mid = Math.floor((low + high) / 2)
     const candidate = [...head, ...lines.slice(headerIndex + 1, mid)].join('\\n')
     tries += 1
@@ -119,142 +114,102 @@ async function findLastRenderablePrefix(baseCode, theme) {
 }
 
 function initMermaidOnce() {
-  if (!mermaid)
+  if (!state.mermaid || state.initialized)
     return
   try {
-    if (typeof mermaid.initialize === 'function')
-      mermaid.initialize(${initLiteral})
+    state.mermaid.initialize(${initLiteral})
+    state.initialized = true
   }
-  catch (e) {
-    if (DEBUG)
-      console.warn('[markstream-svelte:mermaid-cdn-worker] initialize failed', e)
+  catch (error) {
+    if (state.debug)
+      console.warn('[markstream-svelte:mermaid-cdn-worker] initialize failed', error)
   }
 }
 
-globalThis.addEventListener('message', async (ev) => {
-  const msg = ev.data || {}
-  if (msg.type === 'init') {
-    DEBUG = !!msg.debug
-    return
-  }
-
-  const id = msg.id
-  const action = msg.action
-  const payload = msg.payload || {}
-
-  if (!mermaid) {
-    const error = mermaidLoadError ? String(mermaidLoadError?.message || mermaidLoadError) : 'Mermaid is not available in worker'
-    globalThis.postMessage({ id, ok: false, error })
-    return
-  }
-
-  try {
-    if (action === 'canParse') {
-      const ok = await canParse(payload.code, payload.theme)
-      globalThis.postMessage({ id, ok: true, result: ok })
-      return
-    }
-    if (action === 'findPrefix') {
-      const result = await findLastRenderablePrefix(payload.code, payload.theme)
-      globalThis.postMessage({ id, ok: true, result })
-      return
-    }
-    globalThis.postMessage({ id, ok: false, error: 'Unknown action' })
-  }
-  catch (e) {
-    globalThis.postMessage({ id, ok: false, error: String(e?.message || e) })
-  }
-})
-`.trimStart()
-
-  if (mode === 'module') {
-    return `
-${sharedLogic}
-
-let loadPromise = null
 async function loadMermaid() {
-  if (mermaid || mermaidLoadError)
+  if (state.mermaid || state.loadError)
     return
-  if (!loadPromise) {
-    loadPromise = (async () => {
+  if (!state.loadPromise) {
+    state.loadPromise = (async () => {
       try {
         const mod = await import(${mermaidUrlLiteral})
-        mermaid = normalizeMermaidModule(mod) || null
+        state.mermaid = normalizeMermaidModule(mod)
         initMermaidOnce()
       }
-      catch (e) {
-        mermaidLoadError = e
+      catch (error) {
+        state.loadError = error
       }
     })()
   }
-  await loadPromise
+  await state.loadPromise
 }
 
-await loadMermaid()
-`.trimStart()
-  }
-
-  return `
-${sharedLogic}
-
-function loadMermaidClassic() {
-  if (mermaid || mermaidLoadError)
+self.addEventListener('message', async (event) => {
+  const request = event.data
+  if (request.type === 'init') {
+    state.debug = request.debug
     return
-  try {
-    importScripts(${mermaidUrlLiteral})
-    mermaid = normalizeMermaidModule(globalThis.mermaid) || null
-    initMermaidOnce()
   }
-  catch (e) {
-    mermaidLoadError = e
-  }
-}
+  if (request.type !== 'request')
+    return
 
-loadMermaidClassic()
+  await loadMermaid()
+
+  if (!state.mermaid) {
+    const error = state.loadError
+      ? errorMessage(state.loadError)
+      : 'Mermaid is not available in worker'
+    self.postMessage({
+      type: 'error',
+      action: request.action,
+      id: request.id,
+      ok: false,
+      error,
+    })
+    return
+  }
+
+  try {
+    if (request.action === 'canParse') {
+      const result = await canParse(request.payload.code, request.payload.theme)
+      self.postMessage({
+        type: 'result',
+        action: 'canParse',
+        id: request.id,
+        ok: true,
+        result,
+      })
+      return
+    }
+    const result = await findLastRenderablePrefix(
+      request.payload.code,
+      request.payload.theme,
+    )
+    self.postMessage({
+      type: 'result',
+      action: 'findPrefix',
+      id: request.id,
+      ok: true,
+      result,
+    })
+  }
+  catch (error) {
+    self.postMessage({
+      type: 'error',
+      action: request.action,
+      id: request.id,
+      ok: false,
+      error: errorMessage(error),
+    })
+  }
+})
 `.trimStart()
 }
 
 export function createMermaidWorkerFromCDN(options: MermaidCDNWorkerOptions): MermaidCDNWorkerHandle {
   const source = buildMermaidCDNWorkerSource(options)
-
-  if (typeof Worker === 'undefined' || typeof URL === 'undefined' || typeof Blob === 'undefined') {
-    return {
-      worker: null,
-      dispose: () => {},
-      source,
-    }
-  }
-
-  const blob = new Blob([source], { type: 'text/javascript' })
-  const url = URL.createObjectURL(blob)
-  let revoked = false
-
-  const dispose = () => {
-    if (revoked)
-      return
-    revoked = true
-    try {
-      URL.revokeObjectURL(url)
-    }
-    catch {
-      // Ignore revoke failures.
-    }
-  }
-
-  const mode = options.mode ?? 'module'
-  const workerOptions = mode === 'module'
-    ? ({ ...(options.workerOptions ?? {}), type: 'module' as const } satisfies WorkerOptions)
-    : options.workerOptions
-
-  const worker = new Worker(url, workerOptions)
-  if (options.debug) {
-    try {
-      worker.postMessage({ type: 'init', debug: true })
-    }
-    catch {
-      // Ignore init messaging failures.
-    }
-  }
-
-  return { worker, dispose, source }
+  const initRequest: MermaidWorkerInitRequest | undefined = options.debug
+    ? { type: 'init', debug: true }
+    : undefined
+  return createModuleWorkerFromSource(source, options.workerOptions, initRequest)
 }

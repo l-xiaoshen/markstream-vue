@@ -1,17 +1,13 @@
 <script lang="ts">
-  import type { SvelteRenderableNode, SvelteRenderContext } from './shared/node-helpers'
+  import type { HighlightNode as ParserHighlightNode } from 'stream-markdown-parser'
+  import type { IndexedNodeProps } from '../types/componentProps'
   import InlineWrapNode from './InlineWrapNode.svelte'
 
-  type Props = {
-    node: SvelteRenderableNode
-    context?: SvelteRenderContext
-    indexKey?: string | number
-  };
   let {
     node,
     context = undefined,
     indexKey = undefined
-  }: Props = $props()
+  }: IndexedNodeProps<ParserHighlightNode> = $props()
 </script>
 
 <InlineWrapNode {node} {context} {indexKey} tag="mark" />

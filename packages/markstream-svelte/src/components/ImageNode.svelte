@@ -1,26 +1,22 @@
 <script lang="ts">
-  import type { SvelteRenderableNode } from './shared/node-helpers'
+  import type { ImageNode as ParserImageNode } from 'stream-markdown-parser'
+  import type { ContextualNodeProps } from '../types/componentProps'
   import { sanitizeImageSrc } from 'stream-markdown-parser'
-  import { useSafeI18n } from '../i18n/useSafeI18n'
-  import { getString } from './shared/node-helpers'
+  import { getSafeI18n } from '../i18n/safeI18n'
 
   import { untrack } from 'svelte'
 
-  type Props = {
-    node: SvelteRenderableNode;
-    fallbackSrc?: string;
-    lazy?: boolean;
-    usePlaceholder?: boolean;
-  }
+  type Props = ContextualNodeProps<ParserImageNode>
 
   let {
     node,
-    fallbackSrc = '',
-    lazy = false,
-    usePlaceholder = true
+    context = undefined,
   }: Props = $props()
 
-  const { t } = useSafeI18n()
+  const { t } = getSafeI18n()
+  const fallbackSrc = $derived(context?.imageProps?.fallbackSrc ?? '')
+  const lazy = $derived(context?.imageProps?.lazy ?? false)
+  const usePlaceholder = $derived(context?.imageProps?.usePlaceholder ?? true)
 
   type ImageStage = 'primary' | 'fallback' | 'failed'
 
@@ -32,17 +28,17 @@
     return { src: '', stage: 'failed' }
   }
 
-  let safeNodeSrc = $derived(sanitizeImageSrc((node as any)?.src))
+  let safeNodeSrc = $derived(sanitizeImageSrc(node.src))
   let safeFallbackSrc = $derived(sanitizeImageSrc(fallbackSrc))
-  let alt = $derived(getString((node as any)?.alt))
-  let title = $derived(getString((node as any)?.title))
-  let raw = $derived(getString((node as any)?.raw))
-  let isLoading = $derived(Boolean((node as any)?.loading))
+  let alt = $derived(node.alt)
+  let title = $derived(node.title ?? '')
+  let raw = $derived(node.raw)
+  let isLoading = $derived(node.loading === true)
   let useEagerImagePath = $derived(!lazy)
 
-  let initialSafeNodeSrc = untrack(() => sanitizeImageSrc((node as any)?.src))
+  let initialSafeNodeSrc = untrack(() => sanitizeImageSrc(node.src))
   let initialSafeFallbackSrc = untrack(() => sanitizeImageSrc(fallbackSrc))
-  let initialIsLoading = untrack(() => Boolean((node as any)?.loading))
+  let initialIsLoading = untrack(() => node.loading === true)
   let initialImageState = resolveImageState(initialSafeNodeSrc, initialSafeFallbackSrc, initialIsLoading)
   let previousSafeNodeSrc = $state(initialSafeNodeSrc)
   let previousSafeFallbackSrc = $state(initialSafeFallbackSrc)
@@ -79,8 +75,10 @@
   }
 
   function handleImageLoad(event: Event) {
-    const image = event.currentTarget as HTMLImageElement | null
-    if (image && image.naturalWidth === 0 && image.naturalHeight === 0) {
+    const image = event.currentTarget
+    if (!(image instanceof HTMLImageElement))
+      return
+    if (image.naturalWidth === 0 && image.naturalHeight === 0) {
       handleImageError()
       return
     }

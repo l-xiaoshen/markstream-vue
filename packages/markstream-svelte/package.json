@@ -64,8 +64,23 @@
     "./index.css": "./dist/index.css",
     "./index.px.css": "./dist/index.px.css",
     "./index.tailwind.css": "./dist/index.tailwind.css",
-    "./workers/katexRenderer.worker": "./dist/workers/katexRenderer.worker.js",
-    "./workers/mermaidParser.worker": "./dist/workers/mermaidParser.worker.js"
+    "./nodes": {
+      "types": "./dist/nodes.d.ts",
+      "svelte": "./dist/nodes.js",
+      "import": "./dist/nodes.js"
+    },
+    "./workers": {
+      "types": "./dist/workers.d.ts",
+      "import": "./dist/workers.js"
+    },
+    "./workers/katexRenderer.worker": {
+      "types": "./dist/workers/katexRenderer.worker.d.ts",
+      "import": "./dist/workers/katexRenderer.worker.js"
+    },
+    "./workers/mermaidParser.worker": {
+      "types": "./dist/workers/mermaidParser.worker.d.ts",
+      "import": "./dist/workers/mermaidParser.worker.js"
+    }
   },
   "main": "./dist/index.js",
   "module": "./dist/index.js",
@@ -77,7 +92,9 @@
     "build": "pnpm --dir ../markdown-parser build && pnpm --dir ../markstream-core build && svelte-package -i src -o dist --tsconfig tsconfig.build.json && postcss src/index.css -o dist/index.css && cp dist/index.css dist/index.tailwind.css && node ../../scripts/generate-px-css.mjs",
     "dev": "vite dev",
     "preview": "vite preview",
-    "typecheck": "svelte-check --tsconfig ./tsconfig.json",
+    "test": "pnpm --workspace-root exec vitest run packages/markstream-svelte/test",
+    "test:types": "tsc -p tsconfig.tests.json --noEmit",
+    "typecheck": "pnpm --dir ../markdown-parser build && pnpm --dir ../markstream-core build && svelte-check --tsconfig ./tsconfig.build.json",
     "prepublishOnly": "pnpm run build && pnpm run check:workspace-deps-published",
     "check:core-published": "node ../../scripts/check-core-published.mjs --package-json package.json --core-package-json ../markstream-core/package.json",
     "check:workspace-deps-published": "node ../../scripts/check-workspace-deps-published.mjs --package-json package.json",
@@ -89,7 +106,7 @@
     "katex": ">=0.16.22",
     "mermaid": ">=11",
     "stream-monaco": ">=0.0.48",
-    "svelte": ">=5 <6"
+    "svelte": ">=5.33.1 <6"
   },
   "peerDependenciesMeta": {
     "@antv/infographic": {

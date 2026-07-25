@@ -1,15 +1,12 @@
 <script lang="ts">
-  import type { SvelteRenderableNode, SvelteRenderContext } from './shared/node-helpers'
+  import type { ReferenceNode as ParserReferenceNode } from 'stream-markdown-parser'
+  import type { ContextualNodeProps } from '../types/componentProps'
   import { renderNodeHtml } from './shared/renderNodeHtml'
 
-  type Props = {
-    node: SvelteRenderableNode
-    context?: SvelteRenderContext
-  };
   let {
     node,
     context = undefined
-  }: Props = $props()
+  }: ContextualNodeProps<ParserReferenceNode> = $props()
 
   let html = $derived(renderNodeHtml(node, context))
 </script>

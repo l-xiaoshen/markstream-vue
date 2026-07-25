@@ -1,144 +1,137 @@
 import './index.css'
 
-export { default as AdmonitionNode } from './components/AdmonitionNode.svelte'
-export { default as BlockquoteNode } from './components/BlockquoteNode.svelte'
-export { default as CheckboxNode } from './components/CheckboxNode.svelte'
-export { default as CodeBlockNode } from './components/CodeBlockNode.svelte'
-export { default as SvelteCodeBlockNode } from './components/CodeBlockNode.svelte'
-export { default as D2BlockNode } from './components/D2BlockNode.svelte'
-export { default as DefinitionListNode } from './components/DefinitionListNode.svelte'
-export { default as EmojiNode } from './components/EmojiNode.svelte'
-export { default as EmphasisNode } from './components/EmphasisNode.svelte'
-export { default as FallbackComponent } from './components/FallbackComponent.svelte'
-export { default as FootnoteAnchorNode } from './components/FootnoteAnchorNode.svelte'
-export { default as FootnoteNode } from './components/FootnoteNode.svelte'
-export { default as FootnoteReferenceNode } from './components/FootnoteReferenceNode.svelte'
-export { default as HardBreakNode } from './components/HardBreakNode.svelte'
-export { default as HeadingNode } from './components/HeadingNode.svelte'
-export { default as HighlightNode } from './components/HighlightNode.svelte'
-export { default as HtmlBlockNode } from './components/HtmlBlockNode.svelte'
-export { default as HtmlInlineNode } from './components/HtmlInlineNode.svelte'
-export { default as HtmlPreviewFrame } from './components/HtmlPreviewFrame.svelte'
-export { default as ImageNode } from './components/ImageNode.svelte'
-export { default as InfographicBlockNode } from './components/InfographicBlockNode.svelte'
-export { default as InlineCodeNode } from './components/InlineCodeNode.svelte'
-export { default as InlineWrapNode } from './components/InlineWrapNode.svelte'
-export { default as InsertNode } from './components/InsertNode.svelte'
-export { default as LinkNode } from './components/LinkNode.svelte'
-export { default as ListItemNode } from './components/ListItemNode.svelte'
-export { default as ListNode } from './components/ListNode.svelte'
-export { default as MarkdownCodeBlockNode } from './components/MarkdownCodeBlockNode.svelte'
-export { default as MathBlockNode } from './components/MathBlockNode.svelte'
-export { default as MathInlineNode } from './components/MathInlineNode.svelte'
-export { default as MermaidBlockNode } from './components/MermaidBlockNode.svelte'
-export { default as NodeOutlet } from './components/NodeOutlet.svelte'
-export { default as NodeRenderer } from './components/NodeRenderer.svelte'
-export { default as MarkdownRender } from './components/NodeRenderer.svelte'
 export { default } from './components/NodeRenderer.svelte'
-export { default as ParagraphNode } from './components/ParagraphNode.svelte'
-export { default as PreCodeNode } from './components/PreCodeNode.svelte'
-export { default as ReferenceNode } from './components/ReferenceNode.svelte'
-export { default as RenderChildren } from './components/RenderChildren.svelte'
-export {
-  buildRenderContext,
-  resolveParsedNodes,
-} from './components/shared/node-helpers'
-export type {
-  CodeBlockPreviewPayload,
-  NodeRendererCodeBlockProps,
-  NodeRendererD2Props,
-  NodeRendererEvents,
-  NodeRendererInfographicProps,
-  NodeRendererMermaidProps,
-  NodeRendererProps,
-  SvelteRenderableNode,
-  SvelteRenderContext,
-} from './components/shared/node-helpers'
-export { default as StrikethroughNode } from './components/StrikethroughNode.svelte'
-export { default as StrongNode } from './components/StrongNode.svelte'
-export { default as SubscriptNode } from './components/SubscriptNode.svelte'
-export { default as SuperscriptNode } from './components/SuperscriptNode.svelte'
-export { default as TableNode } from './components/TableNode.svelte'
-export { default as TextNode } from './components/TextNode.svelte'
-export { default as ThematicBreakNode } from './components/ThematicBreakNode.svelte'
-export { default as Tooltip } from './components/Tooltip.svelte'
-export { default as VmrContainerNode } from './components/VmrContainerNode.svelte'
-export type {
-  SmoothMarkdownStreamControllerSvelte,
-  SmoothMarkdownStreamOptions,
-} from './composables/useSmoothMarkdownStream.svelte'
-export {
-  useSmoothMarkdownStream,
-} from './composables/useSmoothMarkdownStream.svelte'
-export {
-  SMOOTH_STREAMING_CONTEXT,
-} from './context/smoothStreaming'
-export type {
-  SmoothStreamingContextValue,
-} from './context/smoothStreaming'
+export { default as MarkdownRender } from './components/NodeRenderer.svelte'
+export { default as NodeRenderer } from './components/NodeRenderer.svelte'
+
 export {
   clearGlobalCustomComponents,
-  getCustomComponentsRevision,
-  getCustomNodeComponents,
+  createCustomComponentRegistry,
+  defineCustomComponents,
   removeCustomComponents,
   setCustomComponents,
-  subscribeCustomComponents,
 } from './customComponents'
-export type { CustomComponentMap, MarkstreamSvelteComponent } from './customComponents'
+export type {
+  CustomComponentMap,
+  CustomComponentRegistry,
+  MarkstreamCustomComponentProps,
+  MarkstreamSvelteComponent,
+} from './customComponents'
 export {
+  createRenderedHtmlEnhancer,
   disposeRenderedHtmlEnhancements,
   enhanceRenderedHtml,
 } from './enhanceRenderedHtml'
-export type { EnhanceRenderedHtmlOptions, RenderedHtmlEnhancementHandle } from './enhanceRenderedHtml'
-export { setDefaultI18nMap, useSafeI18n } from './i18n/useSafeI18n'
-export type { D2Loader } from './optional/d2'
+export type {
+  EnhanceRenderedHtmlOptions,
+  RenderedHtmlEnhancementHandle,
+  RenderedHtmlEnhancer,
+} from './enhanceRenderedHtml'
 export {
-  disableD2,
-  enableD2,
-  isD2Enabled,
-  setD2Loader,
+  createSafeI18nService,
+  getSafeI18n,
+  setDefaultI18nMap,
+} from './i18n/safeI18n'
+export type {
+  I18nMessages,
+  SafeI18nService,
+} from './i18n/safeI18n'
+export {
+  createD2Runtime,
+  d2Runtime,
 } from './optional/d2'
-export type { KatexLoader } from './optional/katex'
+export type {
+  D2Constructor,
+  D2Instance,
+  D2Loader,
+  D2Runtime,
+} from './optional/d2'
 export {
-  disableKatex,
-  enableKatex,
-  getKatex,
-  isKatexEnabled,
-  setKatexLoader,
+  createInfographicRuntime,
+  infographicRuntime,
+} from './optional/infographic'
+export type {
+  InfographicConstructor,
+  InfographicInstance,
+  InfographicLoader,
+  InfographicRuntime,
+} from './optional/infographic'
+export {
+  createKatexRuntime,
+  katexRuntime,
 } from './optional/katex'
-export type { MermaidLoader } from './optional/mermaid'
+export type {
+  KatexLoader,
+  KatexModule,
+  KatexRuntime,
+} from './optional/katex'
 export {
-  disableMermaid,
-  enableMermaid,
-  getMermaid,
-  isMermaidEnabled,
-  setMermaidLoader,
+  createMermaidRuntime,
+  mermaidRuntime,
+} from './optional/mermaid'
+export type {
+  MermaidInitConfig,
+  MermaidLoader,
+  MermaidModule,
+  MermaidRenderResult,
+  MermaidRuntime,
 } from './optional/mermaid'
 export {
-  isCodeBlockRuntimeReady,
-  preloadCodeBlockRuntime,
-  resetCodeBlockRuntimeReadyForTest,
+  createMonacoRuntime,
+  monacoRuntime,
+} from './optional/monaco'
+export type {
+  MonacoLoader,
+  MonacoRuntime,
+  MonacoRuntimeHelpers,
+  MonacoRuntimeModule,
 } from './optional/monaco'
 export {
+  createMarkdownNodeParser,
+} from './parseMarkdownToNodes'
+export type {
+  MarkdownNodeParser,
+} from './parseMarkdownToNodes'
+export {
+  createNestedMarkdownParser,
   parseNestedMarkdownToNodes,
 } from './parseNestedMarkdownToNodes'
 export type {
   NestedMarkdownNodesInput,
   NestedMarkdownNodesOptions,
+  NestedMarkdownParser,
 } from './parseNestedMarkdownToNodes'
 export {
+  createMarkdownHtmlRenderer,
   renderMarkdownNodesToHtml,
   renderMarkdownNodeToHtml,
   renderMarkdownToHtml,
   renderNestedMarkdownToHtml,
 } from './renderMarkdownHtml'
 export type {
+  MarkdownHtmlRenderer,
   MarkstreamSvelteRenderOptions,
   NestedMarkdownHtmlInput,
   NestedMarkdownHtmlOptions,
-  RenderableMarkdownNode,
 } from './renderMarkdownHtml'
 export { sanitizeHtmlContent } from './sanitizeHtmlContent'
+export {
+  SmoothMarkdownStream,
+} from './state/streaming/SmoothMarkdownStream.svelte'
+export type {
+  SmoothMarkdownStreamOptions,
+} from './state/streaming/SmoothMarkdownStream.svelte'
+export {
+  createTooltipService,
+  hideTooltip,
+  isTooltipVisible,
+  showTooltipForAnchor,
+} from './tooltip/singletonTooltip'
+export type {
+  TooltipOrigin,
+  TooltipPlacement,
+  TooltipService,
+} from './tooltip/singletonTooltip'
 export type {
   CodeBlockDiffAppearance,
   CodeBlockDiffHideUnchangedRegions,
@@ -154,16 +147,52 @@ export type {
   CodeBlockMonacoThemeObject,
 } from './types/monaco'
 export {
-  getLanguageIcon,
-  languageMap,
+  isCustomNodeType,
+  isKnownMarkdownNode,
+  isNodeType,
+  KNOWN_MARKDOWN_NODE_TYPES,
+} from './types/nodes'
+export type {
+  CustomMarkdownNode,
+  KnownMarkdownNode,
+  KnownMarkdownNodeSchema,
+  KnownMarkdownNodeType,
+  MarkdownNodeOfType,
+  ParsedMarkdownNode,
+  RenderableMarkdownNode,
+  RenderableMarkdownNodeFromSchema,
+  TextSpecialNode,
+} from './types/nodes'
+export type {
+  CodeBlockPreviewPayload,
+  NodeRendererCodeBlockProps,
+  NodeRendererD2Props,
+  NodeRendererEvents,
+  NodeRendererImageProps,
+  NodeRendererInfographicProps,
+  NodeRendererInput,
+  NodeRendererMathProps,
+  NodeRendererMermaidProps,
+  NodeRendererProps,
+  RendererCustomComponentMap,
+  SvelteRenderContext,
+} from './types/renderer'
+export {
   normalizeLanguageIdentifier,
   resolveMonacoLanguageId,
-  setLanguageIconResolver,
-} from './utils/languageIcon'
-export type { LanguageIconResolver } from './utils/languageIcon'
-export * from './workers/katexCdnWorker'
-export * from './workers/katexWorkerClient'
-export * from './workers/mermaidCdnWorker'
-export * from './workers/mermaidWorkerClient'
-export { KATEX_COMMANDS, normalizeStandaloneBackslashT, setDefaultMathOptions } from 'stream-markdown-parser'
-export type { MathOptions } from 'stream-markdown-parser'
+} from './utils/language'
+export {
+  clearKaTeXWorker,
+  setKaTeXWorker,
+} from './workers/katexWorkerRuntime'
+export {
+  clearMermaidWorker,
+  setMermaidWorker,
+} from './workers/mermaidWorkerRuntime'
+export type {
+  BaseNode,
+  HtmlPolicy,
+  MarkdownIt,
+  ParsedNode,
+  ParseOptions,
+} from 'stream-markdown-parser'

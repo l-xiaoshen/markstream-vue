@@ -1,24 +1,21 @@
 /// <reference lib="webworker" />
 
+import type {
+  MermaidWorkerCanParseResponse,
+  MermaidWorkerErrorResponse,
+  MermaidWorkerFindPrefixResponse,
+  MermaidWorkerResponse,
+  MermaidWorkerTheme,
+} from '../types/runtimeWorkers'
 import mermaid from 'mermaid'
+import { toErrorMessage } from '../types/runtimeErrors'
+import { isMermaidWorkerRequest } from './internal/workerProtocol'
 
 declare const self: DedicatedWorkerGlobalScope
 
 mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', flowchart: { htmlLabels: false } })
 
-type Theme = 'light' | 'dark'
-
-interface RequestMessage {
-  id: string
-  action: 'canParse' | 'findPrefix' | (string & {})
-  payload: { code: string, theme: Theme }
-}
-
-type ResponseMessage
-  = | { id: string, ok: true, result: any }
-    | { id: string, ok: false, error: string }
-
-function applyThemeTo(code: string, theme: Theme) {
+function applyThemeTo(code: string, theme: MermaidWorkerTheme) {
   const themeValue = theme === 'dark' ? 'dark' : 'default'
   const themeConfig = `%%{init: {"theme": "${themeValue}"}}%%\n`
   const trimmed = code.trimStart()
@@ -30,7 +27,7 @@ function applyThemeTo(code: string, theme: Theme) {
 function findHeaderIndex(lines: string[]) {
   const headerRe = /^(?:graph|flowchart|flowchart\s+tb|flowchart\s+lr|sequenceDiagram|gantt|classDiagram|stateDiagram(?:-v2)?|erDiagram|journey|pie|quadrantChart|timeline|xychart(?:-beta)?)\b/
   for (let index = 0; index < lines.length; index += 1) {
-    const line = lines[index].trim()
+    const line = lines[index]?.trim() ?? ''
     if (!line || line.startsWith('%%'))
       continue
     if (headerRe.test(line))
@@ -39,17 +36,13 @@ function findHeaderIndex(lines: string[]) {
   return -1
 }
 
-async function canParse(code: string, theme: Theme) {
+async function canParse(code: string, theme: MermaidWorkerTheme) {
   const themed = applyThemeTo(code, theme)
-  const anyMermaid = mermaid as any
-  if (typeof anyMermaid.parse === 'function') {
-    await anyMermaid.parse(themed)
-    return true
-  }
-  throw new Error('mermaid.parse not available in worker')
+  await mermaid.parse(themed)
+  return true
 }
 
-async function findLastRenderablePrefix(baseCode: string, theme: Theme) {
+async function findLastRenderablePrefix(baseCode: string, theme: MermaidWorkerTheme) {
   const lines = baseCode.split('\n')
   const headerIndex = findHeaderIndex(lines)
   if (headerIndex === -1)
@@ -81,33 +74,46 @@ async function findLastRenderablePrefix(baseCode: string, theme: Theme) {
   return [...head, ...lines.slice(headerIndex + 1, lastGood)].join('\n')
 }
 
-self.onmessage = async (event: MessageEvent<RequestMessage>) => {
+self.onmessage = async (event: MessageEvent<unknown>) => {
   const message = event.data
-  const send = (response: ResponseMessage) => self.postMessage(response)
+  if (!isMermaidWorkerRequest(message))
+    return
+  if (message.type === 'init')
+    return
+
+  const send = (response: MermaidWorkerResponse) => self.postMessage(response)
 
   try {
     if (message.action === 'canParse') {
-      send({
+      const response: MermaidWorkerCanParseResponse = {
+        type: 'result',
+        action: 'canParse',
         id: message.id,
         ok: true,
         result: await canParse(message.payload.code, message.payload.theme),
-      })
+      }
+      send(response)
       return
     }
 
-    if (message.action === 'findPrefix') {
-      send({
-        id: message.id,
-        ok: true,
-        result: await findLastRenderablePrefix(message.payload.code, message.payload.theme),
-      })
-      return
+    const response: MermaidWorkerFindPrefixResponse = {
+      type: 'result',
+      action: 'findPrefix',
+      id: message.id,
+      ok: true,
+      result: await findLastRenderablePrefix(message.payload.code, message.payload.theme),
     }
-
-    send({ id: message.id, ok: false, error: 'Unknown action' })
+    send(response)
   }
-  catch (error: any) {
-    send({ id: message.id, ok: false, error: error?.message ?? String(error) })
+  catch (error: unknown) {
+    const response: MermaidWorkerErrorResponse = {
+      type: 'error',
+      action: message.action,
+      id: message.id,
+      ok: false,
+      error: toErrorMessage(error),
+    }
+    send(response)
   }
 }
 

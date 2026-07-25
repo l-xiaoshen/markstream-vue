@@ -1,7 +1,11 @@
 <script lang="ts">
-  import type { SvelteRenderableNode } from './shared/node-helpers'
-  
-  type Props = { node: SvelteRenderableNode };
+  import type {
+    CheckboxInputNode as ParserCheckboxInputNode,
+    CheckboxNode as ParserCheckboxNode,
+  } from 'stream-markdown-parser'
+  import type { NodeProps } from '../types/componentProps'
+
+  type Props = NodeProps<ParserCheckboxNode | ParserCheckboxInputNode>
   let { node }: Props = $props()
 </script>
-<input class="checkbox-node" type="checkbox" disabled checked={Boolean((node as any)?.checked)} />
+<input class="checkbox-node" type="checkbox" disabled checked={node.checked} />

@@ -1,17 +1,13 @@
-/**
- * Context key and types for Svelte smooth streaming parent suppression.
- *
- * When a parent NodeRenderer is already pacing content via smooth streaming,
- * nested renderers (e.g. thinking blocks, custom tag content) should suppress
- * their own smooth streaming to avoid double-pacing.
- *
- * Usage:
- *   const parentSmoothStreaming = getContext<SmoothStreamingContextValue | undefined>(
- *     SMOOTH_STREAMING_CONTEXT,
- *   )
- *   setContext(SMOOTH_STREAMING_CONTEXT, () => smoothStreamingEnabled)
- */
+import { getContext, setContext } from 'svelte'
 
-export const SMOOTH_STREAMING_CONTEXT = 'markstreamSmoothStreaming'
+type SmoothStreamingContextValue = () => boolean
 
-export type SmoothStreamingContextValue = () => boolean
+const smoothStreamingContext = Symbol('markstream-smooth-streaming')
+
+export function getParentSmoothStreaming(): SmoothStreamingContextValue | undefined {
+  return getContext<SmoothStreamingContextValue | undefined>(smoothStreamingContext)
+}
+
+export function setSmoothStreaming(value: SmoothStreamingContextValue): void {
+  setContext(smoothStreamingContext, value)
+}

@@ -1,102 +1,91 @@
-let monacoModule: any = null
-let importAttempted = false
-let pendingImport: Promise<MonacoRuntimeModule | null> | null = null
-let workersPreloaded = false
-let codeBlockRuntimeReady = false
+import type { UseMonacoReturn } from 'stream-monaco'
+import type { OptionalPeerLoader } from '../runtime/optionalPeer'
+import { createOptionalPeerRuntime } from '../runtime/optionalPeer'
 
-export interface MonacoRuntimeHelpers {
-  createEditor?: (container: HTMLElement, code: string, language: string) => Promise<unknown> | unknown
-  createDiffEditor?: (container: HTMLElement, original: string, modified: string, language: string) => Promise<unknown> | unknown
-  updateCode?: (code: string, language?: string) => Promise<unknown> | unknown
-  updateDiff?: (original: string, modified: string, language?: string) => Promise<unknown> | unknown
-  cleanupEditor?: () => unknown
-  safeClean?: () => unknown
-  setTheme?: (theme?: string | Record<string, unknown>) => Promise<unknown> | unknown
-  getEditorView?: () => unknown
-  getDiffEditorView?: () => unknown
-  refreshDiffPresentation?: () => unknown
+export type MonacoRuntimeHelpers = UseMonacoReturn
+export type MonacoRuntimeModule = typeof import('stream-monaco')
+export type MonacoLoader = OptionalPeerLoader<MonacoRuntimeModule>
+
+export interface MonacoRuntime {
+  get: () => Promise<MonacoRuntimeModule | null>
+  isReady: () => boolean
+  preload: () => Promise<boolean>
 }
 
-export interface MonacoRuntimeModule {
-  useMonaco: (options?: Record<string, unknown>) => MonacoRuntimeHelpers
-  preloadMonacoWorkers?: () => Promise<unknown> | unknown
-  getOrCreateHighlighter?: (...args: unknown[]) => Promise<unknown> | unknown
-}
+const defaultMonacoLoader: MonacoLoader = () => import('stream-monaco')
 
-export function isCodeBlockRuntimeReady() {
-  return codeBlockRuntimeReady
-}
-
-export function resetCodeBlockRuntimeReadyForTest() {
-  codeBlockRuntimeReady = false
-}
-
-export async function preloadCodeBlockRuntime() {
-  const runtime = await getUseMonaco()
-  return !!runtime
-}
-
-async function preloadWorkers(mod: any) {
-  if (workersPreloaded)
-    return
-  workersPreloaded = true
-  const existingEnv = (globalThis as any)?.MonacoEnvironment
-  if (existingEnv && (typeof existingEnv.getWorker === 'function' || typeof existingEnv.getWorkerUrl === 'function'))
-    return
-  if (typeof mod?.preloadMonacoWorkers === 'function')
-    await mod.preloadMonacoWorkers()
-}
-
-async function warmupShikiTokenizer(mod: any) {
-  const getOrCreateHighlighter = mod?.getOrCreateHighlighter
-  if (typeof getOrCreateHighlighter !== 'function')
-    return true
-
+async function warmupShikiTokenizer(mod: MonacoRuntimeModule) {
   try {
-    const highlighter = await getOrCreateHighlighter(
+    const highlighter = await mod.getOrCreateHighlighter(
       ['vitesse-dark', 'vitesse-light'],
       ['plaintext', 'text', 'javascript'],
     )
 
-    if (highlighter && typeof highlighter.codeToTokens === 'function') {
-      highlighter.codeToTokens('const a = 1', { lang: 'javascript', theme: 'vitesse-dark' })
-    }
-
-    return true
+    highlighter.codeToTokens('const a = 1', { lang: 'javascript', theme: 'vitesse-dark' })
   }
   catch (error) {
     console.warn('[markstream-svelte] Failed to warm up stream-monaco tokenizer.', error)
-    return false
   }
 }
 
-export async function getUseMonaco(): Promise<MonacoRuntimeModule | null> {
-  if (monacoModule)
-    return monacoModule
-  if (pendingImport)
-    return await pendingImport
-  if (importAttempted)
-    return null
+export function createMonacoRuntime(
+  loader: MonacoLoader = defaultMonacoLoader,
+): MonacoRuntime {
+  const peerRuntime = createOptionalPeerRuntime(loader)
+  const state: {
+    preparePromise: Promise<void> | null
+    ready: boolean
+    warmupStarted: boolean
+    workersPreloaded: boolean
+  } = {
+    preparePromise: null,
+    ready: false,
+    warmupStarted: false,
+    workersPreloaded: false,
+  }
 
-  pendingImport = (async () => {
+  const prepare = async (mod: MonacoRuntimeModule) => {
+    if (state.workersPreloaded)
+      return
+    if (state.preparePromise)
+      return await state.preparePromise
+
+    state.preparePromise = (async () => {
+      await mod.preloadMonacoWorkers()
+      state.workersPreloaded = true
+    })().finally(() => {
+      state.preparePromise = null
+    })
+    await state.preparePromise
+  }
+
+  const get = async (): Promise<MonacoRuntimeModule | null> => {
+    if (typeof window === 'undefined')
+      return null
+
+    const mod = await peerRuntime.get()
+    if (!mod)
+      return null
+
     try {
-      const imported: any = await import('stream-monaco')
-      monacoModule = imported?.default ?? imported
-      await preloadWorkers(monacoModule)
-      codeBlockRuntimeReady = true
-      void warmupShikiTokenizer(monacoModule)
-      return monacoModule
+      await prepare(mod)
+      state.ready = true
+      if (!state.warmupStarted) {
+        state.warmupStarted = true
+        void warmupShikiTokenizer(mod)
+      }
+      return mod
     }
     catch {
-      importAttempted = true
       return null
     }
-  })()
-
-  try {
-    return await pendingImport
   }
-  finally {
-    pendingImport = null
+
+  return {
+    get,
+    isReady: () => state.ready,
+    preload: async () => Boolean(await get()),
   }
 }
+
+export const monacoRuntime = createMonacoRuntime()

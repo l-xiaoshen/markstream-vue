@@ -1,22 +1,18 @@
 <script lang="ts">
-  import type { SvelteRenderableNode, SvelteRenderContext } from './shared/node-helpers'
+  import type { ParagraphNode as ParserParagraphNode } from 'stream-markdown-parser'
+  import type { IndexedNodeProps } from '../types/componentProps'
   import RenderChildren from './RenderChildren.svelte'
   import NodeOutlet from './NodeOutlet.svelte'
-  import { getNodeList, splitParagraphChildren } from './shared/node-helpers'
+  import { splitParagraphChildren } from './shared/node-helpers'
 
-  type Props = {
-    node: SvelteRenderableNode
-    context?: SvelteRenderContext
-    indexKey?: string | number
-  };
   let {
     node,
     context = undefined,
     indexKey = undefined
-  }: Props = $props()
+  }: IndexedNodeProps<ParserParagraphNode> = $props()
 
   let prefix = $derived(String(indexKey ?? 'p'))
-  let parts = $derived(splitParagraphChildren(getNodeList((node as any)?.children)))
+  let parts = $derived(splitParagraphChildren(node.children))
 </script>
 
 {#each parts as part, index (prefix + '-' + index)}

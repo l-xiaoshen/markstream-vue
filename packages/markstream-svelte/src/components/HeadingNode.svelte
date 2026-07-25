@@ -1,19 +1,18 @@
 <script lang="ts">
-  import type { SvelteRenderableNode, SvelteRenderContext } from './shared/node-helpers'
+  import type { HeadingNode as ParserHeadingNode } from 'stream-markdown-parser'
+  import type { IndexedNodeProps } from '../types/componentProps'
+  import { clampHeadingLevel } from '../utils/rendering/html'
   import RenderChildren from './RenderChildren.svelte'
-  import { clampHeadingLevel, getNodeList } from './shared/node-helpers'
 
-  interface Props {
-    node: SvelteRenderableNode
-    context?: SvelteRenderContext
-    indexKey?: string | number
-  }
-
-  let { node, context = undefined, indexKey = undefined }: Props = $props()
-  let level = $derived(clampHeadingLevel((node as any)?.level))
+  let {
+    node,
+    context = undefined,
+    indexKey = undefined,
+  }: IndexedNodeProps<ParserHeadingNode> = $props()
+  let level = $derived(clampHeadingLevel(node.level))
   let tag = $derived('h' + level)
 </script>
 
 <svelte:element this={tag} class="heading-node heading-{level}">
-  <RenderChildren nodes={getNodeList((node as any)?.children)} {context} prefix={String(indexKey ?? 'heading') + '-heading'} />
+  <RenderChildren nodes={node.children} {context} prefix={String(indexKey ?? 'heading') + '-heading'} />
 </svelte:element>

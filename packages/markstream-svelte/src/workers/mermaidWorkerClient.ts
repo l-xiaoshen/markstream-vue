@@ -1,201 +1,222 @@
-import { isMermaidEnabled } from '../optional/mermaid'
+import type {
+  MermaidWorkerAction,
+  MermaidWorkerInitRequest,
+  MermaidWorkerPayload,
+  MermaidWorkerRequest,
+  MermaidWorkerTheme,
+  WorkerLoad,
+} from '../types/runtimeWorkers'
+import type { MermaidWorkerResult } from './internal/mermaidPendingRequests'
+import { mermaidRuntime } from '../optional/mermaid'
+import {
+  FeatureDisabledError,
+  WorkerBusyError,
+  WorkerInitError,
+  WorkerLifecycleError,
+  WorkerProtocolError,
+} from '../types/runtimeErrors'
+import { createMermaidPendingRequests } from './internal/mermaidPendingRequests'
+import { isMermaidWorkerResponse } from './internal/workerProtocol'
 
-type Theme = 'light' | 'dark'
-
-let worker: Worker | null = null
-let workerInitError: any = null
-
-interface Pending {
-  resolve: (value: any) => void
-  reject: (error: any) => void
+export interface MermaidWorkerClientOptions {
+  isEnabled?: () => boolean
+  maxConcurrency?: number
 }
 
-const rpcMap = new Map<string, Pending>()
-let maxConcurrency = 5
-let debugClient = false
-
-export function setMermaidWorkerClientDebug(enabled: boolean) {
-  debugClient = !!enabled
+export interface MermaidWorkerClient {
+  canParse: (code: string, theme: MermaidWorkerTheme, timeout?: number) => Promise<boolean>
+  clearWorker: () => void
+  findPrefix: (code: string, theme: MermaidWorkerTheme, timeout?: number) => Promise<string | null>
+  getLoad: () => WorkerLoad
+  setDebug: (enabled: boolean) => void
+  setMaxConcurrency: (value: number) => void
+  setWorker: (worker: Worker) => void
 }
 
-export function setMermaidWorkerMaxConcurrency(value: number) {
-  if (Number.isFinite(value) && value > 0)
-    maxConcurrency = Math.floor(value)
-}
+export function createMermaidWorkerClient(
+  options: MermaidWorkerClientOptions = {},
+): MermaidWorkerClient {
+  const checkEnabled = options.isEnabled ?? mermaidRuntime.isEnabled
+  const state: {
+    debug: boolean
+    maxConcurrency: number
+    nextRequestId: number
+    worker: Worker | null
+    workerInitError: WorkerInitError | null
+  } = {
+    debug: false,
+    maxConcurrency: options.maxConcurrency ?? 5,
+    nextRequestId: 0,
+    worker: null,
+    workerInitError: null,
+  }
+  const pending = createMermaidPendingRequests()
 
-export function getMermaidWorkerLoad() {
-  return { inFlight: rpcMap.size, max: maxConcurrency }
-}
+  const ensureWorker = () => {
+    if (state.worker)
+      return state.worker
 
-export const MERMAID_WORKER_BUSY_CODE = 'WORKER_BUSY'
-export const MERMAID_DISABLED_CODE = 'MERMAID_DISABLED'
-
-export function setMermaidWorker(nextWorker: Worker) {
-  worker = nextWorker
-  workerInitError = null
-  const current = nextWorker
-
-  worker.onmessage = (event: MessageEvent) => {
-    if (worker !== current)
-      return
-
-    const { id, ok, result, error } = event.data || {}
-    const active = rpcMap.get(id)
-    if (!active)
-      return
-
-    if (ok === false || error)
-      active.reject(new Error(error || 'Unknown error'))
-    else
-      active.resolve(result)
+    state.workerInitError = new WorkerInitError(
+      '[markstream-svelte:mermaidWorkerClient] No worker instance set. Please inject a Worker via setMermaidWorker().',
+    )
+    return null
   }
 
-  worker.onerror = (event: ErrorEvent) => {
-    if (worker !== current)
-      return
-    if (rpcMap.size === 0) {
-      console.debug?.('[markstream-svelte:mermaidWorkerClient] Worker error (idle):', event?.message || event)
-      return
-    }
-    try {
-      if (debugClient)
-        console.error('[markstream-svelte:mermaidWorkerClient] Worker error:', event?.message || event)
-      else
-        console.debug?.('[markstream-svelte:mermaidWorkerClient] Worker error:', event?.message || event)
-    }
-    catch {
-      // Ignore logging failures.
-    }
-    for (const [, active] of rpcMap.entries())
-      active.reject(new Error(`Worker error: ${event.message}`))
-    rpcMap.clear()
-  }
+  const setWorker = (nextWorker: Worker) => {
+    state.worker = nextWorker
+    state.workerInitError = null
+    const current = nextWorker
 
-  ;(worker as any).onmessageerror = (event: MessageEvent) => {
-    if (worker !== current)
-      return
-    if (rpcMap.size === 0) {
-      console.debug?.('[markstream-svelte:mermaidWorkerClient] Worker messageerror (idle):', event)
-      return
-    }
-    for (const [, active] of rpcMap.entries())
-      active.reject(new Error('Worker messageerror'))
-    rpcMap.clear()
-  }
-}
-
-export function clearMermaidWorker() {
-  if (worker) {
-    try {
-      for (const [, active] of rpcMap.entries())
-        active.reject(new Error('Worker cleared'))
-      rpcMap.clear()
-      worker.terminate?.()
-    }
-    catch {
-      // Ignore worker termination failures.
-    }
-  }
-  worker = null
-  workerInitError = null
-}
-
-function ensureWorker() {
-  if (worker)
-    return worker
-
-  workerInitError = new Error('[markstream-svelte:mermaidWorkerClient] No worker instance set. Please inject a Worker via setMermaidWorker().')
-  ;(workerInitError as any).name = 'WorkerInitError'
-  ;(workerInitError as any).code = 'WORKER_INIT_ERROR'
-  return null
-}
-
-function callWorker<T>(action: 'canParse' | 'findPrefix', payload: any, timeout = 1400): Promise<T> {
-  if (!isMermaidEnabled()) {
-    const error: any = new Error('Mermaid rendering disabled')
-    error.name = 'MermaidDisabled'
-    error.code = MERMAID_DISABLED_CODE
-    return Promise.reject(error)
-  }
-
-  if (workerInitError)
-    return Promise.reject(workerInitError)
-
-  const activeWorker = ensureWorker()
-  if (!activeWorker)
-    return Promise.reject(workerInitError)
-
-  if (rpcMap.size >= maxConcurrency) {
-    const error: any = new Error('Worker busy')
-    error.name = 'WorkerBusy'
-    error.code = MERMAID_WORKER_BUSY_CODE
-    error.inFlight = rpcMap.size
-    error.max = maxConcurrency
-    return Promise.reject(error)
-  }
-
-  return new Promise<T>((resolve, reject) => {
-    const id = Math.random().toString(36).slice(2)
-    let settled = false
-    let timeoutId: ReturnType<typeof setTimeout> | null = null
-
-    const cleanup = () => {
-      if (settled)
+    current.onmessage = (event: MessageEvent<unknown>) => {
+      if (state.worker !== current)
         return
-      settled = true
-      if (timeoutId != null)
-        clearTimeout(timeoutId)
-      rpcMap.delete(id)
+
+      const response = event.data
+      if (!isMermaidWorkerResponse(response))
+        return
+      const expectedAction = pending.actionFor(response.id)
+      if (!expectedAction)
+        return
+      if (response.action !== expectedAction) {
+        pending.reject(response.id, new WorkerProtocolError(
+          `Worker responded with action "${response.action}" for "${expectedAction}" request`,
+        ))
+        return
+      }
+      if (response.type === 'error') {
+        pending.reject(response.id, new WorkerLifecycleError(
+          'MermaidWorkerError',
+          'WORKER_ERROR',
+          response.error,
+        ))
+        return
+      }
+      pending.resolve(response.id, response.result)
     }
 
-    rpcMap.set(id, {
-      resolve: (value: any) => {
-        cleanup()
-        resolve(value)
-      },
-      reject: (error: any) => {
-        cleanup()
-        reject(error)
-      },
-    })
+    current.onerror = (event: ErrorEvent) => {
+      if (state.worker !== current)
+        return
+      if (pending.size === 0) {
+        console.debug?.(
+          '[markstream-svelte:mermaidWorkerClient] Worker error (idle):',
+          event.message || event,
+        )
+        return
+      }
+      try {
+        const method = state.debug ? console.error : console.debug
+        method?.(
+          '[markstream-svelte:mermaidWorkerClient] Worker error:',
+          event.message || event,
+        )
+      }
+      catch {
+        // Ignore logging failures.
+      }
+      pending.rejectAll(new WorkerLifecycleError(
+        'WorkerError',
+        'WORKER_ERROR',
+        `Worker error: ${event.message}`,
+      ))
+    }
 
+    current.onmessageerror = (event: MessageEvent<unknown>) => {
+      if (state.worker !== current)
+        return
+      if (pending.size === 0) {
+        console.debug?.(
+          '[markstream-svelte:mermaidWorkerClient] Worker messageerror (idle):',
+          event,
+        )
+        return
+      }
+      pending.rejectAll(new WorkerLifecycleError(
+        'WorkerMessageError',
+        'WORKER_MESSAGE_ERROR',
+        'Worker messageerror',
+      ))
+    }
+
+    if (state.debug) {
+      const request: MermaidWorkerInitRequest = { type: 'init', debug: true }
+      current.postMessage(request)
+    }
+  }
+
+  const clearWorker = () => {
     try {
-      activeWorker.postMessage({ id, action, payload })
-    }
-    catch (error) {
-      rpcMap.delete(id)
-      reject(error)
-      return
-    }
-
-    timeoutId = setTimeout(() => {
-      const error: any = new Error('Worker call timed out')
-      error.name = 'WorkerTimeout'
-      error.code = 'WORKER_TIMEOUT'
-      const pending = rpcMap.get(id)
-      pending?.reject(error)
-    }, timeout)
-  })
-}
-
-export async function canParseOffthread(code: string, theme: Theme, timeout = 1400) {
-  return await callWorker<boolean>('canParse', { code, theme }, timeout)
-}
-
-export async function findPrefixOffthread(code: string, theme: Theme, timeout = 1400) {
-  return await callWorker<string | null>('findPrefix', { code, theme }, timeout)
-}
-
-export function terminateWorker() {
-  if (worker) {
-    try {
-      for (const [, active] of rpcMap.entries())
-        active.reject(new Error('Worker terminated'))
-      rpcMap.clear()
-      worker.terminate()
+      state.worker?.terminate()
     }
     finally {
-      worker = null
+      state.worker = null
+      state.workerInitError = null
+      pending.rejectAll(new WorkerLifecycleError(
+        'WorkerCleared',
+        'WORKER_CLEARED',
+        'Worker cleared',
+      ))
     }
+  }
+
+  const callWorker = (
+    action: MermaidWorkerAction,
+    payload: MermaidWorkerPayload,
+    timeout = 1400,
+  ): Promise<MermaidWorkerResult> => {
+    if (!checkEnabled())
+      return Promise.reject(new FeatureDisabledError('MermaidDisabled', 'MERMAID_DISABLED', 'Mermaid'))
+    if (state.workerInitError)
+      return Promise.reject(state.workerInitError)
+
+    const activeWorker = ensureWorker()
+    if (!activeWorker)
+      return Promise.reject(state.workerInitError)
+    if (pending.size >= state.maxConcurrency)
+      return Promise.reject(new WorkerBusyError(pending.size, state.maxConcurrency))
+
+    state.nextRequestId += 1
+    const id = `mermaid-${state.nextRequestId}`
+    const result = pending.start(id, action, timeout)
+    const request: MermaidWorkerRequest = { type: 'request', action, id, payload }
+    try {
+      activeWorker.postMessage(request)
+    }
+    catch (error: unknown) {
+      pending.reject(id, error)
+    }
+    return result
+  }
+
+  return {
+    canParse: async (code, theme, timeout = 1400) => {
+      const result = await callWorker('canParse', { code, theme }, timeout)
+      if (typeof result !== 'boolean')
+        throw new WorkerProtocolError('Mermaid canParse worker returned a non-boolean result')
+      return result
+    },
+    clearWorker,
+    findPrefix: async (code, theme, timeout = 1400) => {
+      const result = await callWorker('findPrefix', { code, theme }, timeout)
+      if (result !== null && typeof result !== 'string')
+        throw new WorkerProtocolError('Mermaid findPrefix worker returned an invalid result')
+      return result
+    },
+    getLoad: () => ({
+      inFlight: pending.size,
+      max: state.maxConcurrency,
+    }),
+    setDebug: (enabled) => {
+      state.debug = enabled
+      if (state.worker) {
+        const request: MermaidWorkerInitRequest = { type: 'init', debug: enabled }
+        state.worker.postMessage(request)
+      }
+    },
+    setMaxConcurrency: (value) => {
+      if (Number.isFinite(value) && value > 0)
+        state.maxConcurrency = Math.floor(value)
+    },
+    setWorker,
   }
 }

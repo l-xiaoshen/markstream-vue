@@ -2,41 +2,26 @@ import { autoUpdate, computePosition, flip, offset, shift } from '@floating-ui/d
 
 export type TooltipPlacement = 'top' | 'bottom' | 'left' | 'right'
 
-let tooltipEl: HTMLDivElement | null = null
-let currentAnchor: HTMLElement | null = null
-let cleanupAutoUpdate: (() => void) | null = null
-let showTimer: ReturnType<typeof setTimeout> | null = null
-let hideTimer: ReturnType<typeof setTimeout> | null = null
-let currentId: string | null = null
-let visible = false
-
-function clearTimers() {
-  if (showTimer) {
-    clearTimeout(showTimer)
-    showTimer = null
-  }
-  if (hideTimer) {
-    clearTimeout(hideTimer)
-    hideTimer = null
-  }
+export interface TooltipOrigin {
+  x: number
+  y: number
 }
 
-function ensureTooltipEl() {
-  if (tooltipEl || typeof document === 'undefined')
-    return tooltipEl
-  tooltipEl = document.createElement('div')
-  tooltipEl.className = 'ms-tooltip'
-  tooltipEl.setAttribute('role', 'tooltip')
-  tooltipEl.dataset.visible = 'false'
-  tooltipEl.style.position = 'fixed'
-  tooltipEl.style.left = '0px'
-  tooltipEl.style.top = '0px'
-  tooltipEl.style.transform = 'translate3d(0,0,0)'
-  document.body.appendChild(tooltipEl)
-  return tooltipEl
+export interface TooltipService {
+  dispose: () => void
+  hide: (immediate?: boolean) => void
+  isVisible: () => boolean
+  show: (
+    anchor: HTMLElement | null,
+    content: string,
+    placement?: TooltipPlacement,
+    immediate?: boolean,
+    origin?: TooltipOrigin,
+    isDark?: boolean | null,
+  ) => void
 }
 
-function detectDarkModeHint(hint?: boolean | null) {
+function detectDarkModeHint(hint?: boolean | null): boolean {
   if (typeof hint === 'boolean')
     return hint
   if (typeof document !== 'undefined') {
@@ -55,87 +40,174 @@ function detectDarkModeHint(hint?: boolean | null) {
   return false
 }
 
-async function updatePosition(placement: TooltipPlacement) {
-  if (!tooltipEl || !currentAnchor)
-    return
-  const { x, y } = await computePosition(currentAnchor, tooltipEl, {
+async function updatePosition(
+  anchor: HTMLElement,
+  tooltip: HTMLDivElement,
+  placement: TooltipPlacement,
+) {
+  const { x, y } = await computePosition(anchor, tooltip, {
     placement,
     middleware: [offset(8), flip(), shift({ padding: 8 })],
     strategy: 'fixed',
   })
-  tooltipEl.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0)`
+  tooltip.style.transform = `translate3d(${Math.round(x)}px, ${Math.round(y)}px, 0)`
 }
+
+export function createTooltipService(): TooltipService {
+  const state: {
+    cleanupAutoUpdate: (() => void) | null
+    currentAnchor: HTMLElement | null
+    currentId: string | null
+    hideTimer: ReturnType<typeof setTimeout> | null
+    nextId: number
+    showTimer: ReturnType<typeof setTimeout> | null
+    tooltipEl: HTMLDivElement | null
+    visible: boolean
+  } = {
+    cleanupAutoUpdate: null,
+    currentAnchor: null,
+    currentId: null,
+    hideTimer: null,
+    nextId: 0,
+    showTimer: null,
+    tooltipEl: null,
+    visible: false,
+  }
+
+  const clearTimers = () => {
+    if (state.showTimer) {
+      clearTimeout(state.showTimer)
+      state.showTimer = null
+    }
+    if (state.hideTimer) {
+      clearTimeout(state.hideTimer)
+      state.hideTimer = null
+    }
+  }
+
+  const ensureTooltipEl = () => {
+    if (state.tooltipEl || typeof document === 'undefined')
+      return state.tooltipEl
+
+    const tooltip = document.createElement('div')
+    tooltip.className = 'ms-tooltip'
+    tooltip.setAttribute('role', 'tooltip')
+    tooltip.dataset.visible = 'false'
+    tooltip.style.position = 'fixed'
+    tooltip.style.left = '0px'
+    tooltip.style.top = '0px'
+    tooltip.style.transform = 'translate3d(0,0,0)'
+    document.body.appendChild(tooltip)
+    state.tooltipEl = tooltip
+    return tooltip
+  }
+
+  const hide = (immediate = false) => {
+    const tooltip = state.tooltipEl
+    if (!tooltip)
+      return
+
+    clearTimers()
+    const doHide = () => {
+      tooltip.dataset.visible = 'false'
+      state.visible = false
+      if (state.currentAnchor && state.currentId) {
+        try {
+          state.currentAnchor.removeAttribute('aria-describedby')
+        }
+        catch {}
+      }
+      state.currentAnchor = null
+      state.currentId = null
+      state.cleanupAutoUpdate?.()
+      state.cleanupAutoUpdate = null
+    }
+
+    if (immediate)
+      doHide()
+    else
+      state.hideTimer = setTimeout(doHide, 120)
+  }
+
+  const show: TooltipService['show'] = (
+    anchor,
+    content,
+    placement = 'top',
+    immediate = false,
+    _origin,
+    isDark,
+  ) => {
+    if (!anchor || typeof document === 'undefined')
+      return
+
+    const tooltip = ensureTooltipEl()
+    if (!tooltip)
+      return
+
+    clearTimers()
+    const doShow = async () => {
+      state.currentAnchor = anchor
+      tooltip.textContent = content
+      tooltip.dataset.placement = placement
+      tooltip.dataset.dark = detectDarkModeHint(isDark) ? 'true' : 'false'
+      tooltip.dataset.visible = 'false'
+      state.nextId += 1
+      const id = `tooltip-${Date.now()}-${state.nextId}`
+      state.currentId = id
+      tooltip.id = id
+      try {
+        anchor.setAttribute('aria-describedby', id)
+      }
+      catch {}
+
+      await updatePosition(anchor, tooltip, placement)
+      if (state.currentId !== id)
+        return
+
+      tooltip.dataset.visible = 'true'
+      state.visible = true
+      state.cleanupAutoUpdate?.()
+      state.cleanupAutoUpdate = autoUpdate(anchor, tooltip, () => {
+        void updatePosition(anchor, tooltip, placement)
+      })
+    }
+
+    if (immediate)
+      void doShow()
+    else
+      state.showTimer = setTimeout(doShow, 80)
+  }
+
+  return {
+    dispose: () => {
+      hide(true)
+      clearTimers()
+      state.tooltipEl?.remove()
+      state.tooltipEl = null
+    },
+    hide,
+    isVisible: () => state.visible,
+    show,
+  }
+}
+
+const defaultTooltipService = createTooltipService()
 
 export function showTooltipForAnchor(
   anchor: HTMLElement | null,
   content: string,
   placement: TooltipPlacement = 'top',
   immediate = false,
-  _origin?: { x: number, y: number } | undefined,
+  origin?: TooltipOrigin,
   isDark?: boolean | null,
 ) {
-  if (!anchor || typeof document === 'undefined')
-    return
-  ensureTooltipEl()
-  if (!tooltipEl)
-    return
-  clearTimers()
-  const doShow = async () => {
-    if (!tooltipEl)
-      return
-    currentAnchor = anchor
-    tooltipEl.textContent = content
-    tooltipEl.dataset.placement = placement
-    tooltipEl.dataset.dark = detectDarkModeHint(isDark) ? 'true' : 'false'
-    tooltipEl.dataset.visible = 'false'
-    currentId = `tooltip-${Date.now()}-${Math.random().toString(36).slice(2)}`
-    tooltipEl.id = currentId
-    try {
-      anchor.setAttribute('aria-describedby', currentId)
-    }
-    catch {}
-    await updatePosition(placement)
-    tooltipEl.dataset.visible = 'true'
-    visible = true
-    cleanupAutoUpdate?.()
-    cleanupAutoUpdate = autoUpdate(anchor, tooltipEl!, () => {
-      void updatePosition(placement)
-    })
-  }
-  if (immediate)
-    void doShow()
-  else
-    showTimer = setTimeout(doShow, 80)
+  defaultTooltipService.show(anchor, content, placement, immediate, origin, isDark)
 }
 
 export function hideTooltip(immediate = false) {
-  if (!tooltipEl)
-    return
-  clearTimers()
-  const doHide = () => {
-    if (!tooltipEl)
-      return
-    tooltipEl.dataset.visible = 'false'
-    visible = false
-    if (currentAnchor && currentId) {
-      try {
-        currentAnchor.removeAttribute('aria-describedby')
-      }
-      catch {}
-    }
-    currentAnchor = null
-    currentId = null
-    if (cleanupAutoUpdate) {
-      cleanupAutoUpdate()
-      cleanupAutoUpdate = null
-    }
-  }
-  if (immediate)
-    doHide()
-  else
-    hideTimer = setTimeout(doHide, 120)
+  defaultTooltipService.hide(immediate)
 }
 
 export function isTooltipVisible() {
-  return visible
+  return defaultTooltipService.isVisible()
 }

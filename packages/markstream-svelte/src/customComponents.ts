@@ -1,90 +1,214 @@
+import type { BaseNode } from 'stream-markdown-parser'
 import type { Component } from 'svelte'
+import type { SvelteRenderContext } from './types/renderer'
 
-export type MarkstreamSvelteComponent = Component<never>
-export type CustomComponentMap = Record<string, MarkstreamSvelteComponent>
+export interface MarkstreamCustomComponentProps<
+  TNode extends BaseNode = BaseNode,
+> {
+  node: TNode
+  context?: SvelteRenderContext | undefined
+  indexKey?: string | number | undefined
+}
+
+export type MarkstreamSvelteComponent<
+  TProps extends object = MarkstreamCustomComponentProps,
+> = Component<TProps>
+
+type NodeSchema<TSchema> = {
+  [TKey in keyof TSchema]: BaseNode
+}
+
+/**
+ * A component map whose key determines the node contract. NodeOutlet supplies
+ * only `MarkstreamCustomComponentProps`.
+ *
+ * @example
+ * ```ts
+ * type Nodes = { thinking: ThinkingNode; citation: CitationNode }
+ * type Components = CustomComponentMap<Nodes>
+ * ```
+ */
+export type CustomComponentMap<
+  TNodeByName extends NodeSchema<TNodeByName> = Record<string, BaseNode>,
+> = {
+  [TName in keyof TNodeByName]?: MarkstreamSvelteComponent<
+    MarkstreamCustomComponentProps<TNodeByName[TName]>
+  >
+}
+
+export type RuntimeCustomComponentMap = Partial<Record<string, Component>>
+
+export interface CustomComponentRegistry<
+  TMapping extends object = RuntimeCustomComponentMap,
+> {
+  clearGlobalCustomComponents: () => void
+  getCustomComponentsRevision: () => number
+  getCustomNodeComponents: (customId?: string) => Partial<TMapping>
+  removeCustomComponents: (id: string) => void
+  setCustomComponents: {
+    (id: string, mapping: Partial<TMapping>): void
+    (mapping: Partial<TMapping>): void
+  }
+  subscribeCustomComponents: (listener: () => void) => () => void
+}
 
 const GLOBAL_KEY = '__global__'
 
-interface Store {
-  scopedComponents: Record<string, CustomComponentMap>
-  revision: number
-  listeners: Set<() => void>
+export function defineCustomComponents<
+  TNodeByName extends NodeSchema<TNodeByName>,
+>(
+  components: CustomComponentMap<TNodeByName>,
+): CustomComponentMap<TNodeByName> {
+  return components
 }
 
-const STORE_KEY = '__MARKSTREAM_SVELTE_CUSTOM_COMPONENTS_STORE__'
-const store: Store = (() => {
-  const globalStore = globalThis as any
-  if (globalStore[STORE_KEY])
-    return globalStore[STORE_KEY] as Store
+export function createCustomComponentRegistry<
+  TMapping extends object = RuntimeCustomComponentMap,
+>(): CustomComponentRegistry<TMapping> {
+  type Mapping = Partial<TMapping>
 
-  const next: Store = {
-    scopedComponents: {},
-    revision: 0,
-    listeners: new Set(),
+  const listeners = new Set<() => void>()
+  const scopedComponents = new Map<string, Mapping>()
+  let revision = 0
+
+  const bumpRevision = () => {
+    revision += 1
+    for (const listener of [...listeners]) {
+      try {
+        listener()
+      }
+      catch {
+        // A failing subscriber must not prevent other registry updates.
+      }
+    }
   }
-  globalStore[STORE_KEY] = next
-  return next
-})()
 
-function bumpRevision() {
-  store.revision += 1
-  for (const listener of Array.from(store.listeners)) {
-    try {
-      listener()
+  const setCustomComponents = (
+    idOrMapping: string | Mapping,
+    maybeMapping?: Mapping,
+  ) => {
+    if (typeof idOrMapping === 'string') {
+      if (maybeMapping)
+        scopedComponents.set(idOrMapping, { ...maybeMapping })
+      else
+        scopedComponents.delete(idOrMapping)
     }
-    catch {
-      // Ignore subscriber failures so one bad consumer does not break the registry.
+    else {
+      scopedComponents.set(GLOBAL_KEY, { ...idOrMapping })
     }
+    bumpRevision()
+  }
+
+  const getCustomNodeComponents = (customId?: string): Mapping => {
+    const globalMapping = scopedComponents.get(GLOBAL_KEY)
+    const scopedMapping = customId
+      ? scopedComponents.get(customId)
+      : undefined
+
+    return {
+      ...(globalMapping ?? {}),
+      ...(scopedMapping ?? {}),
+    }
+  }
+
+  const removeCustomComponents = (id: string) => {
+    if (id === GLOBAL_KEY) {
+      throw new Error(
+        'removeCustomComponents: use clearGlobalCustomComponents for the global scope.',
+      )
+    }
+    scopedComponents.delete(id)
+    bumpRevision()
+  }
+
+  return {
+    clearGlobalCustomComponents: () => {
+      scopedComponents.delete(GLOBAL_KEY)
+      bumpRevision()
+    },
+    getCustomComponentsRevision: () => revision,
+    getCustomNodeComponents,
+    removeCustomComponents,
+    setCustomComponents,
+    subscribeCustomComponents: (listener) => {
+      listeners.add(listener)
+      return () => listeners.delete(listener)
+    },
   }
 }
+
+const defaultCustomComponentRegistry = createCustomComponentRegistry()
 
 export function subscribeCustomComponents(listener: () => void) {
-  store.listeners.add(listener)
-  return () => {
-    store.listeners.delete(listener)
-  }
+  return defaultCustomComponentRegistry.subscribeCustomComponents(listener)
 }
 
 export function getCustomComponentsRevision() {
-  return store.revision
+  return defaultCustomComponentRegistry.getCustomComponentsRevision()
 }
 
-export function setCustomComponents(id: string, mapping: CustomComponentMap): void
-export function setCustomComponents(mapping: CustomComponentMap): void
-export function setCustomComponents(idOrMapping: string | CustomComponentMap, maybeMapping?: CustomComponentMap) {
-  if (typeof idOrMapping === 'string')
-    store.scopedComponents[idOrMapping] = { ...(maybeMapping || {}) }
-  else
-    store.scopedComponents[GLOBAL_KEY] = { ...idOrMapping }
-  bumpRevision()
+function isSvelteComponent(value: unknown): value is Component {
+  return typeof value === 'function'
 }
 
-export function getCustomNodeComponents(customId?: string): CustomComponentMap {
-  const globalMapping = store.scopedComponents[GLOBAL_KEY] || {}
-  if (!customId)
-    return globalMapping
-
-  const scopedMapping = store.scopedComponents[customId] || {}
-  if (!globalMapping || Object.keys(globalMapping).length === 0)
-    return scopedMapping
-  if (!scopedMapping || Object.keys(scopedMapping).length === 0)
-    return globalMapping
-
-  return {
-    ...globalMapping,
-    ...scopedMapping,
+export function toRuntimeCustomComponentMap(
+  mapping: object,
+): RuntimeCustomComponentMap {
+  const components: RuntimeCustomComponentMap = {}
+  for (const [name, component] of Object.entries(mapping)) {
+    if (isSvelteComponent(component))
+      components[name] = component
   }
+  return components
+}
+
+export function setCustomComponents<
+  TNodeByName extends NodeSchema<TNodeByName>,
+>(
+  id: string,
+  mapping: CustomComponentMap<TNodeByName>,
+): void
+export function setCustomComponents<
+  TNodeByName extends NodeSchema<TNodeByName>,
+>(
+  mapping: CustomComponentMap<TNodeByName>,
+): void
+export function setCustomComponents(
+  id: string,
+  mapping: RuntimeCustomComponentMap,
+): void
+export function setCustomComponents(mapping: RuntimeCustomComponentMap): void
+export function setCustomComponents(
+  idOrMapping: string | object,
+  maybeMapping?: object,
+) {
+  if (typeof idOrMapping === 'string') {
+    if (maybeMapping) {
+      defaultCustomComponentRegistry.setCustomComponents(
+        idOrMapping,
+        toRuntimeCustomComponentMap(maybeMapping),
+      )
+    }
+    else {
+      defaultCustomComponentRegistry.removeCustomComponents(idOrMapping)
+    }
+    return
+  }
+  defaultCustomComponentRegistry.setCustomComponents(
+    toRuntimeCustomComponentMap(idOrMapping),
+  )
+}
+
+export function getCustomNodeComponents(
+  customId?: string,
+): RuntimeCustomComponentMap {
+  return defaultCustomComponentRegistry.getCustomNodeComponents(customId)
 }
 
 export function removeCustomComponents(id: string) {
-  if (id === GLOBAL_KEY) {
-    throw new Error('removeCustomComponents: cannot delete global mapping; call clearGlobalCustomComponents instead.')
-  }
-  delete store.scopedComponents[id]
-  bumpRevision()
+  defaultCustomComponentRegistry.removeCustomComponents(id)
 }
 
 export function clearGlobalCustomComponents() {
-  delete store.scopedComponents[GLOBAL_KEY]
-  bumpRevision()
+  defaultCustomComponentRegistry.clearGlobalCustomComponents()
 }

@@ -3,9 +3,9 @@ const SAFE_URL_PROTOCOLS = /^(?:https?:|mailto:|tel:|#|\/|data:image\/(?:png|gif
 
 function neutralizeScriptProtocols(raw: string) {
   return raw
-    .replace(/["']\s*javascript:/gi, '#')
+    .replace(/(["'])\s*javascript:/gi, '$1#')
     .replace(/\bjavascript:/gi, '#')
-    .replace(/["']\s*vbscript:/gi, '#')
+    .replace(/(["'])\s*vbscript:/gi, '$1#')
     .replace(/\bvbscript:/gi, '#')
     .replace(/\bdata:text\/html/gi, '#')
 }
@@ -65,22 +65,14 @@ export function toSafeSvgMarkup(svg: string | null | undefined) {
   const neutralized = neutralizeScriptProtocols(svg)
   const parsed = new DOMParser().parseFromString(neutralized, 'image/svg+xml')
   const svgEl = parsed.documentElement
-  if (!svgEl || svgEl.nodeName.toLowerCase() !== 'svg')
+  if (!isSvgElement(svgEl))
     return ''
 
-  const svgElement = svgEl as unknown as SVGElement
-  scrubSvgElement(svgElement)
-  return svgElement.outerHTML
+  scrubSvgElement(svgEl)
+  return svgEl.outerHTML
 }
 
-export function extractRenderedSvg(renderResult: any) {
-  if (!renderResult)
-    return ''
-  if (typeof renderResult === 'string')
-    return renderResult
-  if (typeof renderResult.svg === 'string')
-    return renderResult.svg
-  if (typeof renderResult.data === 'string')
-    return renderResult.data
-  return ''
+function isSvgElement(element: Element): element is SVGElement {
+  return element.localName.toLowerCase() === 'svg'
+    && element.namespaceURI === 'http://www.w3.org/2000/svg'
 }

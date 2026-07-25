@@ -1,65 +1,32 @@
 <script lang="ts">
-  import type { SvelteRenderableNode, SvelteRenderContext } from './shared/node-helpers'
-  import { resolveStreamingTextState } from 'markstream-core'
-  import { getString } from './shared/node-helpers'
-
-  interface Props {
-    node: SvelteRenderableNode
-    context?: SvelteRenderContext
-    indexKey?: string | number
-  }
+  import type { InlineCodeNode as ParserInlineCodeNode } from 'stream-markdown-parser'
+  import type { IndexedNodeProps } from '../types/componentProps'
+  import { StreamingText } from '../state/streaming/StreamingText.svelte'
 
   let {
     node,
     context = undefined,
     indexKey = undefined,
-  }: Props = $props()
+  }: IndexedNodeProps<ParserInlineCodeNode> = $props()
 
-  let previousKey = ''
-  let previousCode = ''
-  let deltaClass = 'markstream-svelte-text__stream-delta--a'
-
-  const code = $derived(getString((node as any)?.code ?? (node as any)?.content ?? (node as any)?.raw))
+  const code = $derived(node.code)
   const streamKey = $derived(
-    `${String(context?.customId ?? 'global')}:${String(context?.streamRenderVersion ?? 0)}:${String(indexKey ?? 'inline-code')}`,
+    `${String(context?.customId ?? 'global')}:${String(indexKey ?? 'inline-code')}`,
   )
   const fadeEnabled = $derived(context?.fade !== false)
-
-  const streamInfo = $derived.by(() => {
-    const state = context?.textStreamState
-    const previous = streamKey === previousKey
-      ? previousCode
-      : (state?.get(streamKey) ?? '')
-
-    const result = resolveStreamingTextState({
-      nextContent: code,
-      previousContent: previous,
-      typewriterEnabled: fadeEnabled,
-    })
-
-    if (result.appended) {
-      deltaClass = deltaClass.endsWith('--a')
-        ? 'markstream-svelte-text__stream-delta--b'
-        : 'markstream-svelte-text__stream-delta--a'
-    }
-
-    previousKey = streamKey
-    previousCode = code
-    state?.set(streamKey, code)
-
-    return {
-      stableCode: result.settledContent,
-      deltaCode: result.streamedDelta,
-      deltaClass,
-    }
+  const streamInfo = new StreamingText({
+    getContent: () => code,
+    getFadeEnabled: () => fadeEnabled,
+    getKey: () => streamKey,
+    getState: () => context?.textStreamState,
   })
 </script>
 
 <code class="inline-code-node">
-  {streamInfo.stableCode}
-  {#if streamInfo.deltaCode}
+  {streamInfo.stableContent}
+  {#if streamInfo.deltaContent}
     <span class="markstream-svelte-text__stream-delta text-node-stream-delta {streamInfo.deltaClass}">
-      {streamInfo.deltaCode}
+      {streamInfo.deltaContent}
     </span>
   {/if}
 </code>

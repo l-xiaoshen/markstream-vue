@@ -1,14 +1,10 @@
 <script lang="ts">
-  import type { SvelteRenderableNode } from './shared/node-helpers'
-  import { getString } from './shared/node-helpers'
+  import type { FootnoteAnchorNode as ParserFootnoteAnchorNode } from 'stream-markdown-parser'
+  import type { NodeProps } from '../types/componentProps'
 
-  interface Props {
-    node: SvelteRenderableNode
-  }
+  let { node }: NodeProps<ParserFootnoteAnchorNode> = $props()
 
-  let { node }: Props = $props()
-
-  let id = $derived(getString((node as any)?.id))
+  let id = $derived(node.id)
   let href = $derived(id ? `#fnref-${id}` : undefined)
 
   function scrollToReference(event: MouseEvent) {

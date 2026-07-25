@@ -67,15 +67,14 @@ flowchart LR
 ```
 
 Advanced worker clients, CDN worker builders, backpressure controls, runtime
-errors, and wire-protocol types are available from `markstream-svelte/workers`.
+errors, and wire-protocol types are available from `markstream-svelte`.
 
 ## Node renderer overrides
 
-Built-in node components live on the focused `markstream-svelte/nodes`
-subpath instead of the root entry:
+Built-in node components are exported from the root entry:
 
 ```ts
-import { CodeBlockNode, ImageNode } from 'markstream-svelte/nodes'
+import { CodeBlockNode, ImageNode } from 'markstream-svelte'
 ```
 
 Node components use narrow, tiered prop contracts. Leaf renderers receive only

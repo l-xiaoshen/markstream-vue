@@ -1,7 +1,6 @@
 <script lang="ts">
   import type { RendererCustomComponentMap } from 'markstream-svelte'
-  import MarkdownRender from 'markstream-svelte'
-  import { CodeBlockNode } from 'markstream-svelte/nodes'
+  import MarkdownRender, { CodeBlockNode } from 'markstream-svelte'
   import {
     PLAYGROUND_CUSTOM_HTML_TAGS,
     PLAYGROUND_CUSTOM_ID,

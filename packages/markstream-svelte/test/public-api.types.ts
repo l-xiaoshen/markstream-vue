@@ -2,28 +2,28 @@ import type { Component, ComponentProps } from 'svelte'
 import type {
   BaseNode,
   CodeBlockMonacoOptions,
+  D2BlockNode,
   D2Constructor,
   D2Loader,
+  ImageNode,
+  InfographicBlockNode,
+  KaTeXWorkerClient,
   KNOWN_MARKDOWN_NODE_TYPES,
   KnownMarkdownNodeType,
   MarkstreamCustomComponentProps,
+  MermaidBlockNode,
   MonacoRuntimeModule,
+  NodeProps,
   NodeRendererInput,
   ParsedMarkdownNode,
   RenderableMarkdownNode,
   RendererCustomComponentMap,
   SvelteRenderContext,
 } from '../dist/index.js'
-import type {
-  D2BlockNode,
-  ImageNode,
-  InfographicBlockNode,
-  MermaidBlockNode,
-  NodeProps,
-} from '../dist/nodes.js'
-import type { KaTeXWorkerClient } from '../dist/workers.js'
 import {
+  CodeBlockNode,
   createCustomComponentRegistry,
+  createKaTeXWorkerClient,
   createMarkdownHtmlRenderer,
   createMarkdownNodeParser,
   d2Runtime,
@@ -35,8 +35,6 @@ import {
   parseNestedMarkdownToNodes,
   SmoothMarkdownStream,
 } from '../dist/index.js'
-import { CodeBlockNode } from '../dist/nodes.js'
-import { createKaTeXWorkerClient } from '../dist/workers.js'
 import 'markstream-svelte/workers/katexRenderer.worker'
 import 'markstream-svelte/workers/mermaidParser.worker'
 

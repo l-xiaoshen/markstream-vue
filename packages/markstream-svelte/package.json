@@ -64,15 +64,6 @@
     "./index.css": "./dist/index.css",
     "./index.px.css": "./dist/index.px.css",
     "./index.tailwind.css": "./dist/index.tailwind.css",
-    "./nodes": {
-      "types": "./dist/nodes.d.ts",
-      "svelte": "./dist/nodes.js",
-      "import": "./dist/nodes.js"
-    },
-    "./workers": {
-      "types": "./dist/workers.d.ts",
-      "import": "./dist/workers.js"
-    },
     "./workers/katexRenderer.worker": {
       "types": "./dist/workers/katexRenderer.worker.d.ts",
       "import": "./dist/workers/katexRenderer.worker.js"

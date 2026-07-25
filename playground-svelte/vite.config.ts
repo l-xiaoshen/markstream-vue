@@ -29,14 +29,6 @@ export default defineConfig({
         replacement: path.resolve(__dirname, '../packages/markstream-svelte/src/index.css'),
       },
       {
-        find: /^markstream-svelte\/nodes$/,
-        replacement: path.resolve(__dirname, '../packages/markstream-svelte/src/nodes.ts'),
-      },
-      {
-        find: /^markstream-svelte\/workers$/,
-        replacement: path.resolve(__dirname, '../packages/markstream-svelte/src/workers.ts'),
-      },
-      {
         find: 'markstream-svelte',
         replacement: path.resolve(__dirname, '../packages/markstream-svelte/src/index.ts'),
       },

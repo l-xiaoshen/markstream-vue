@@ -36,6 +36,7 @@ export type {
   I18nMessages,
   SafeI18nService,
 } from './i18n/safeI18n'
+export * from './nodes'
 export {
   createD2Runtime,
   d2Runtime,
@@ -182,14 +183,7 @@ export {
   normalizeLanguageIdentifier,
   resolveMonacoLanguageId,
 } from './utils/language'
-export {
-  clearKaTeXWorker,
-  setKaTeXWorker,
-} from './workers/katexWorkerRuntime'
-export {
-  clearMermaidWorker,
-  setMermaidWorker,
-} from './workers/mermaidWorkerRuntime'
+export * from './workers'
 export type {
   BaseNode,
   HtmlPolicy,

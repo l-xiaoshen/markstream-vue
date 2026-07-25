@@ -28,7 +28,7 @@ export interface MermaidPendingRequests {
 export function createMermaidPendingRequests(): MermaidPendingRequests {
   const pending = new Map<string, PendingMermaidCall>()
 
-  const take = (id: string): PendingMermaidCall | null => {
+  function take(id: string): PendingMermaidCall | null {
     const active = pending.get(id)
     if (!active)
       return null
@@ -37,7 +37,7 @@ export function createMermaidPendingRequests(): MermaidPendingRequests {
     return active
   }
 
-  const reject = (id: string, error: unknown) => {
+  function reject(id: string, error: unknown) {
     const active = take(id)
     if (!active)
       return false
@@ -45,7 +45,7 @@ export function createMermaidPendingRequests(): MermaidPendingRequests {
     return true
   }
 
-  const resolve = (id: string, value: MermaidWorkerResult) => {
+  function resolve(id: string, value: MermaidWorkerResult) {
     const active = take(id)
     if (!active)
       return false

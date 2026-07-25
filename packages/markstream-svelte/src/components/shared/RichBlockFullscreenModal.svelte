@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { Attachment } from 'svelte/attachments'
   import RichBlockZoomControls from './RichBlockZoomControls.svelte'
 
   type RichBlockModalVariant = 'd2' | 'infographic' | 'mermaid'
@@ -38,17 +37,17 @@
     zoomOutLabel,
   }: Props = $props()
 
-  const portal: Attachment<HTMLElement> = (element) => {
+  function portal(element: HTMLElement) {
     document.body.appendChild(element)
     return () => element.remove()
   }
 
-  const contentAttachment: Attachment<HTMLElement> = (element) => {
+  function contentAttachment(element: HTMLElement) {
     onContentElement?.(element)
     return () => onContentElement?.(null)
   }
 
-  const dialogAttachment: Attachment<HTMLElement> = (element) => {
+  function dialogAttachment(element: HTMLElement) {
     const previousFocus = document.activeElement instanceof HTMLElement
       ? document.activeElement
       : null

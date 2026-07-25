@@ -36,11 +36,11 @@ export class SmoothMarkdownStream {
   constructor(options: SmoothMarkdownStreamOptions = {}) {
     this.#controller = createSmoothMarkdownStream(options)
     this.#optionsSignature = getOptionsSignature(options)
-    this.#unsubscribe = this.#controller.subscribe(this.#sync)
+    this.#unsubscribe = this.#controller.subscribe(() => this.#sync())
     this.#sync()
   }
 
-  #sync = (): void => {
+  #sync(): void {
     const snapshot = this.#controller.getSnapshot()
     this.source = snapshot.source
     this.visible = snapshot.visible
@@ -59,7 +59,7 @@ export class SmoothMarkdownStream {
     this.#controller.destroy()
 
     this.#controller = createSmoothMarkdownStream(options)
-    this.#unsubscribe = this.#controller.subscribe(this.#sync)
+    this.#unsubscribe = this.#controller.subscribe(() => this.#sync())
     this.#controller.reset(snapshot.visible)
     if (snapshot.source.startsWith(snapshot.visible))
       this.#controller.enqueue(snapshot.source.slice(snapshot.visible.length))
@@ -72,7 +72,7 @@ export class SmoothMarkdownStream {
     this.#sync()
   }
 
-  setOptions = (options: SmoothMarkdownStreamOptions): void => {
+  setOptions(options: SmoothMarkdownStreamOptions): void {
     const signature = getOptionsSignature(options)
     if (signature === this.#optionsSignature)
       return
@@ -80,33 +80,33 @@ export class SmoothMarkdownStream {
     this.#replaceController(options)
   }
 
-  enqueue = (chunk: string): void => {
+  enqueue(chunk: string): void {
     this.#controller.enqueue(chunk)
   }
 
-  finish = (
+  finish(
     options?: Parameters<SmoothMarkdownStreamController['finish']>[0],
-  ): void => {
+  ): void {
     this.#controller.finish(options)
   }
 
-  flush = (): void => {
+  flush(): void {
     this.#controller.flush()
   }
 
-  reset = (initialMarkdown?: string): void => {
+  reset(initialMarkdown?: string): void {
     this.#controller.reset(initialMarkdown)
   }
 
-  pause = (): void => {
+  pause(): void {
     this.#controller.pause()
   }
 
-  resume = (): void => {
+  resume(): void {
     this.#controller.resume()
   }
 
-  destroy = (): void => {
+  destroy(): void {
     if (this.#destroyed)
       return
     this.#destroyed = true

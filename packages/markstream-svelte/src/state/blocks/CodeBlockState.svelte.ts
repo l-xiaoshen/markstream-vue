@@ -1,7 +1,6 @@
 import type { CodeBlockNode } from 'stream-markdown-parser'
 import type { MonacoOptions } from 'stream-monaco'
 import type { Component } from 'svelte'
-import type { Attachment } from 'svelte/attachments'
 import type { CodeBlockMonacoOptions } from '../../types/monaco'
 import type {
   NodeRendererCodeBlockProps,
@@ -67,10 +66,6 @@ export class CodeBlockState {
 
   readonly chrome: RichBlockState
   readonly editor: MonacoEditor
-  readonly editorAttachment: Attachment<HTMLDivElement>
-  readonly copy: RichBlockState['copy']
-  readonly showButtonTooltip: RichBlockState['showButtonTooltip']
-  readonly showCopyTooltip: RichBlockState['showCopyTooltip']
 
   constructor(private readonly getInput: () => CodeBlockInput) {
     this.#input = $derived(this.getInput())
@@ -162,11 +157,6 @@ export class CodeBlockState {
         && !this.#shouldDeferStreamingLanguage
       ),
     })
-    this.editorAttachment = this.editor.attachment
-    this.copy = this.chrome.copy
-    this.showButtonTooltip = this.chrome.showButtonTooltip
-    this.showCopyTooltip = this.chrome.showCopyTooltip
-
     this.code = $derived(this.#source.code)
     this.collapsed = $derived(this.chrome.collapsed)
     this.copied = $derived(this.chrome.copied)
@@ -191,24 +181,46 @@ export class CodeBlockState {
     })
   }
 
-  changeFontSize = (next: number): void => {
+  editorAttachment(element: HTMLDivElement) {
+    return this.editor.attachment(element)
+  }
+
+  copy(): Promise<void> {
+    return this.chrome.copy()
+  }
+
+  showButtonTooltip(
+    ...args: Parameters<RichBlockState['showButtonTooltip']>
+  ): void {
+    this.chrome.showButtonTooltip(...args)
+  }
+
+  showCopyTooltip(
+    ...args: Parameters<RichBlockState['showCopyTooltip']>
+  ): void {
+    this.chrome.showCopyTooltip(...args)
+  }
+
+  changeFontSize(next: number): void {
     if (this.#options.enableFontSizeControl === false)
       return
     this.codeFontSize = Math.min(24, Math.max(10, next))
     this.editor.layout()
   }
 
-  closePreview = (): void => {
+  closePreview(): void {
     this.previewOpen = false
   }
 
-  toggleCollapsed = (): Promise<void> => this.chrome.toggleCollapsed()
+  toggleCollapsed(): Promise<void> {
+    return this.chrome.toggleCollapsed()
+  }
 
-  toggleExpanded = (): void => {
+  toggleExpanded(): void {
     this.expanded = !this.expanded
   }
 
-  togglePreview = (): void => {
+  togglePreview(): void {
     this.previewOpen = !this.previewOpen
   }
 }

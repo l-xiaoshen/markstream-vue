@@ -5,9 +5,9 @@ export interface KaTeXRenderCache {
 
 export function createKaTeXRenderCache(maxEntries: number): KaTeXRenderCache {
   const entries = new Map<string, string>()
-  const keyFor = (content: string, displayMode: boolean) => (
-    `${displayMode ? 'd' : 'i'}:${content}`
-  )
+  function keyFor(content: string, displayMode: boolean) {
+    return `${displayMode ? 'd' : 'i'}:${content}`
+  }
 
   return {
     get: (content, displayMode) => entries.get(keyFor(content, displayMode)),

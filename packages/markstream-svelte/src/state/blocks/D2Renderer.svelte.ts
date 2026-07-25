@@ -99,7 +99,7 @@ export class D2Renderer {
     this.#scheduleDrain(this.#pendingJob?.force ?? false)
   }
 
-  #drain = async (): Promise<void> => {
+  async #drain(): Promise<void> {
     if (this.#active || !this.#pendingJob || !this.#mounted)
       return
     const job = this.#pendingJob
@@ -142,10 +142,10 @@ export class D2Renderer {
     }
   }
 
-  requestRender = (
+  requestRender(
     force = false,
     snapshot = this.#createSnapshot(),
-  ): void => {
+  ): void {
     if (!this.#mounted || !this.options.getActive() || !snapshot.source.trim())
       return
     if (this.#pendingJob?.snapshot.signature === snapshot.signature && !force)
@@ -178,7 +178,7 @@ export class D2Renderer {
     this.#scheduleDrain(force)
   }
 
-  suspend = (clearOutput = false): void => {
+  suspend(clearOutput = false): void {
     this.#generation += 1
     this.#pendingJob = null
     this.#activeSignature = ''

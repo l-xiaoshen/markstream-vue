@@ -221,8 +221,8 @@
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <!-- svelte-ignore a11y_mouse_events_have_key_events -->
 <div
-  {@attach htmlEnhancements.attachment}
-  {@attach typewriterCursor.rootAttachment}
+  {@attach (element) => htmlEnhancements.attachment(element)}
+  {@attach (element) => typewriterCursor.rootAttachment(element)}
   class="markstream-svelte markdown-renderer {className}"
   class:dark={isDark}
   data-custom-id={customId}
@@ -242,6 +242,6 @@
     </div>
   {/each}
   {#if typewriterCursor.visible}
-    <span {@attach typewriterCursor.cursorAttachment} class="typewriter-cursor" aria-hidden="true"></span>
+    <span {@attach (element) => typewriterCursor.cursorAttachment(element)} class="typewriter-cursor" aria-hidden="true"></span>
   {/if}
 </div>

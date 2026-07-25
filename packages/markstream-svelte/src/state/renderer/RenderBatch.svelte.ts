@@ -58,10 +58,10 @@ export class RenderBatch {
       })
     })
 
-    onDestroy(this.#cancelScheduledBatch)
+    onDestroy(() => this.#cancelScheduledBatch())
   }
 
-  #cancelScheduledBatch = (): void => {
+  #cancelScheduledBatch(): void {
     this.#generation += 1
     if (this.#timer !== undefined) {
       clearTimeout(this.#timer)
@@ -78,6 +78,7 @@ export class RenderBatch {
       return
 
     const generation = this.#generation
+    // This timer callback needs lexical `this` when passed by reference.
     const advance = () => {
       this.#timer = undefined
       this.#frame = undefined
@@ -101,7 +102,7 @@ export class RenderBatch {
     this.#timer = setTimeout(advance, delayMs)
   }
 
-  revealAll = (): void => {
+  revealAll(): void {
     this.#cancelScheduledBatch()
     this.count = this.getTotal()
   }

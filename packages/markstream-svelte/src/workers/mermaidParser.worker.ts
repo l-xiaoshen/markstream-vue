@@ -81,7 +81,9 @@ self.onmessage = async (event: MessageEvent<unknown>) => {
   if (message.type === 'init')
     return
 
-  const send = (response: MermaidWorkerResponse) => self.postMessage(response)
+  function send(response: MermaidWorkerResponse) {
+    self.postMessage(response)
+  }
 
   try {
     if (message.action === 'canParse') {

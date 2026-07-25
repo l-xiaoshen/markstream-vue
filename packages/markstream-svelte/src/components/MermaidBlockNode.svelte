@@ -67,20 +67,20 @@
           <span class="mermaid-title__text">Mermaid</span>
         </div>
         {#if options?.showModeToggle !== false}
-          <RichBlockModeToggle variant="mermaid" isDark={block.resolvedIsDark} isSource={block.showSource} onChange={block.switchMode} previewLabel={t('common.preview') || 'Preview'} sourceLabel={t('common.source') || 'Source'} />
+          <RichBlockModeToggle variant="mermaid" isDark={block.resolvedIsDark} isSource={block.showSource} onChange={(mode) => block.switchMode(mode)} previewLabel={t('common.preview') || 'Preview'} sourceLabel={t('common.source') || 'Source'} />
         {/if}
         <div class="mermaid-actions">
           {#if options?.showCollapseButton !== false}
-            <RichBlockActionButton className="mermaid-btn mermaid-action-btn mermaid-btn--icon" icon={collapseIcon} label={block.collapsed ? (t('common.expand') || 'Expand') : (t('common.collapse') || 'Collapse')} onClick={block.toggleCollapsed} onShowTooltip={(event) => block.showButtonTooltip(event, block.collapsed ? (t('common.expand') || 'Expand') : (t('common.collapse') || 'Collapse'))} pressed={block.collapsed} />
+            <RichBlockActionButton className="mermaid-btn mermaid-action-btn mermaid-btn--icon" icon={collapseIcon} label={block.collapsed ? (t('common.expand') || 'Expand') : (t('common.collapse') || 'Collapse')} onClick={() => void block.toggleCollapsed()} onShowTooltip={(event) => block.showButtonTooltip(event, block.collapsed ? (t('common.expand') || 'Expand') : (t('common.collapse') || 'Collapse'))} pressed={block.collapsed} />
           {/if}
           {#if options?.showCopyButton !== false}
-            <RichBlockActionButton className="mermaid-btn mermaid-action-btn mermaid-btn--icon" icon={copyIcon} label={block.copied ? (t('common.copied') || 'Copied') : (t('common.copy') || 'Copy')} onClick={block.copy} onShowTooltip={showCopyTooltip} />
+            <RichBlockActionButton className="mermaid-btn mermaid-action-btn mermaid-btn--icon" icon={copyIcon} label={block.copied ? (t('common.copied') || 'Copied') : (t('common.copy') || 'Copy')} onClick={() => void block.copy()} onShowTooltip={showCopyTooltip} />
           {/if}
           {#if options?.showExportButton !== false}
-            <RichBlockActionButton className="mermaid-btn mermaid-action-btn mermaid-btn--icon" disabled={!block.svgMarkup || block.showSource || block.collapsed} icon={exportIcon} label={t('common.export') || 'Export'} onClick={block.exportSvg} onShowTooltip={(event) => block.showButtonTooltip(event, t('common.export') || 'Export')} />
+            <RichBlockActionButton className="mermaid-btn mermaid-action-btn mermaid-btn--icon" disabled={!block.svgMarkup || block.showSource || block.collapsed} icon={exportIcon} label={t('common.export') || 'Export'} onClick={() => block.exportSvg()} onShowTooltip={(event) => block.showButtonTooltip(event, t('common.export') || 'Export')} />
           {/if}
           {#if options?.showFullscreenButton !== false}
-            <RichBlockActionButton className="mermaid-btn mermaid-action-btn mermaid-btn--icon" disabled={!block.svgMarkup || block.showSource || block.collapsed} icon={fullscreenIcon} label={t('common.open') || 'Open'} onClick={block.openModal} onShowTooltip={(event) => block.showButtonTooltip(event, t('common.open') || 'Open')} />
+            <RichBlockActionButton className="mermaid-btn mermaid-action-btn mermaid-btn--icon" disabled={!block.svgMarkup || block.showSource || block.collapsed} icon={fullscreenIcon} label={t('common.open') || 'Open'} onClick={() => block.openModal()} onShowTooltip={(event) => block.showButtonTooltip(event, t('common.open') || 'Open')} />
           {/if}
         </div>
       </div>
@@ -92,9 +92,9 @@
           <pre class="mermaid-source"><code>{block.source}</code></pre>
         {:else}
           {#if options?.showZoomControls !== false}
-            <RichBlockZoomControls className="markstream-svelte-zoom-controls" isDark={block.resolvedIsDark} onReset={block.resetZoom} onZoomIn={block.zoomIn} onZoomOut={block.zoomOut} resetLabel={t('common.resetZoom') || 'Reset zoom'} variant="mermaid" zoom={block.zoom} zoomInLabel={t('common.zoomIn') || 'Zoom in'} zoomOutLabel={t('common.zoomOut') || 'Zoom out'} />
+            <RichBlockZoomControls className="markstream-svelte-zoom-controls" isDark={block.resolvedIsDark} onReset={() => block.resetZoom()} onZoomIn={() => block.zoomIn()} onZoomOut={() => block.zoomOut()} resetLabel={t('common.resetZoom') || 'Reset zoom'} variant="mermaid" zoom={block.zoom} zoomInLabel={t('common.zoomIn') || 'Zoom in'} zoomOutLabel={t('common.zoomOut') || 'Zoom out'} />
           {/if}
-          <div {@attach block.previewAttachment} class="mermaid-preview markstream-svelte-mermaid" style={block.previewStyle}>
+          <div {@attach (element) => block.previewAttachment(element)} class="mermaid-preview markstream-svelte-mermaid" style={block.previewStyle}>
             {#if block.svgMarkup}
               {@html block.svgMarkup}
             {:else if block.renderError}
@@ -110,6 +110,6 @@
       </div>
     {/if}
 
-    <RichBlockFullscreenModal closeLabel={t('common.close') || 'Close'} isDark={block.resolvedIsDark} markup={block.svgMarkup} onClose={block.closeModal} onContentElement={block.setModalHost} onReset={block.resetZoom} onZoomIn={block.zoomIn} onZoomOut={block.zoomOut} open={block.modalOpen} resetLabel={t('common.resetZoom') || 'Reset zoom'} variant="mermaid" zoom={block.zoom} zoomInLabel={t('common.zoomIn') || 'Zoom in'} zoomOutLabel={t('common.zoomOut') || 'Zoom out'} />
+    <RichBlockFullscreenModal closeLabel={t('common.close') || 'Close'} isDark={block.resolvedIsDark} markup={block.svgMarkup} onClose={() => block.closeModal()} onContentElement={(element) => block.setModalHost(element)} onReset={() => block.resetZoom()} onZoomIn={() => block.zoomIn()} onZoomOut={() => block.zoomOut()} open={block.modalOpen} resetLabel={t('common.resetZoom') || 'Reset zoom'} variant="mermaid" zoom={block.zoom} zoomInLabel={t('common.zoomIn') || 'Zoom in'} zoomOutLabel={t('common.zoomOut') || 'Zoom out'} />
   </div>
 {/if}

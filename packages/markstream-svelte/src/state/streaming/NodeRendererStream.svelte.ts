@@ -133,6 +133,6 @@ export class NodeRendererStream {
     onMount(() => {
       this.#mounted = true
     })
-    onDestroy(this.smoothStream.destroy)
+    onDestroy(() => this.smoothStream.destroy())
   }
 }

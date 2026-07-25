@@ -72,8 +72,9 @@ function cloneNestedNodeCollections(
   tagSet: ReadonlySet<string>,
   segmentQueues: SegmentQueues,
 ): void {
-  const cloneNodes = <TNode extends BaseNode>(nodes: readonly TNode[]): TNode[] =>
-    nodes.map(child => hydrateNodeTree(child, tagSet, segmentQueues))
+  function cloneNodes<TNode extends BaseNode>(nodes: readonly TNode[]): TNode[] {
+    return nodes.map(child => hydrateNodeTree(child, tagSet, segmentQueues))
+  }
 
   if (!isKnownMarkdownNode(node)) {
     if (hasNodeChildren(node))

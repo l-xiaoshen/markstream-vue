@@ -155,7 +155,7 @@ export function splitParagraphChildren<TNode extends BaseNode>(
   const parts: ParagraphPart<TNode>[] = []
 
   const inlineBuffer: TNode[] = []
-  const flushInline = () => {
+  function flushInline() {
     if (!inlineBuffer.length)
       return
     parts.push({ kind: 'inline', nodes: inlineBuffer.slice() })

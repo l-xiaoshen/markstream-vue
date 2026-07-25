@@ -120,7 +120,7 @@ export class MermaidRenderer {
       && this.options.getActive()
   }
 
-  #drain = async (): Promise<void> => {
+  async #drain(): Promise<void> {
     if (this.#active || !this.#pendingJob || !this.#mounted)
       return
     const job = this.#pendingJob
@@ -203,10 +203,10 @@ export class MermaidRenderer {
     }
   }
 
-  requestRender = (
+  requestRender(
     force = false,
     snapshot = this.#createSnapshot(),
-  ): void => {
+  ): void {
     if (!this.#mounted || !this.options.getActive())
       return
     if (!snapshot.source.trim()) {
@@ -247,7 +247,7 @@ export class MermaidRenderer {
     this.#scheduleDrain(force)
   }
 
-  suspend = (): void => {
+  suspend(): void {
     this.#generation += 1
     this.#pendingJob = null
     this.#activeSignature = ''
@@ -255,7 +255,7 @@ export class MermaidRenderer {
     this.#clearTimer()
   }
 
-  clear = (): void => {
+  clear(): void {
     this.suspend()
     this.svgMarkup = ''
     this.renderError = ''
@@ -269,7 +269,7 @@ export class MermaidRenderer {
     this.#boundInteractionVersions = new WeakMap()
   }
 
-  bindInteractions = (element: Element | null | undefined): void => {
+  bindInteractions(element: Element | null | undefined): void {
     if (
       !element?.querySelector('svg')
       || this.#boundInteractionVersions.get(element) === this.interactionVersion

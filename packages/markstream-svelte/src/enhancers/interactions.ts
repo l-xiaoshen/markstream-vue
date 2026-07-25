@@ -32,8 +32,12 @@ function enhanceTooltips(
     if (title != null)
       target.removeAttribute('title')
 
-    const show = () => showTooltipForAnchor(target, text, 'top', false, undefined, options.isDark)
-    const hide = () => hideTooltip()
+    function show() {
+      showTooltipForAnchor(target, text, 'top', false, undefined, options.isDark)
+    }
+    function hide() {
+      hideTooltip()
+    }
 
     target.addEventListener('mouseenter', show)
     target.addEventListener('focus', show)
@@ -63,7 +67,7 @@ function enhanceFootnotes(
     '.footnote-reference .footnote-link[href^="#"]',
   )
   for (const link of links) {
-    const handleClick = (event: MouseEvent) => {
+    function handleClick(event: MouseEvent) {
       const href = link.getAttribute('href')
       if (!href)
         return

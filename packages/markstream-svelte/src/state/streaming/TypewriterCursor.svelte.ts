@@ -1,5 +1,4 @@
 import type { BaseNode } from 'stream-markdown-parser'
-import type { Attachment } from 'svelte/attachments'
 import { onDestroy, tick } from 'svelte'
 
 const EXCLUDED_NODE_TYPES = [
@@ -58,7 +57,7 @@ export class TypewriterCursor {
   #positionGeneration = 0
   #previousLength = 0
 
-  rootAttachment: Attachment<HTMLElement> = (element) => {
+  rootAttachment(element: HTMLElement) {
     this.#root = element
     this.#schedulePosition()
     return () => {
@@ -67,7 +66,7 @@ export class TypewriterCursor {
     }
   }
 
-  cursorAttachment: Attachment<HTMLElement> = (element) => {
+  cursorAttachment(element: HTMLElement) {
     this.#cursor = element
     this.#schedulePosition()
     return () => {
@@ -98,7 +97,7 @@ export class TypewriterCursor {
       this.visible = true
       this.#clearHideTimer()
       this.#schedulePosition()
-      this.#hideTimer = setTimeout(this.#hide, 3000)
+      this.#hideTimer = setTimeout(() => this.#hide(), 3000)
     })
 
     onDestroy(() => {
@@ -114,7 +113,7 @@ export class TypewriterCursor {
     this.#hideTimer = undefined
   }
 
-  #hide = (): void => {
+  #hide(): void {
     this.#positionGeneration += 1
     this.visible = false
     this.#clearHideTimer()
@@ -128,7 +127,7 @@ export class TypewriterCursor {
     })
   }
 
-  updatePosition = (): void => {
+  updatePosition(): void {
     if (typeof window === 'undefined' || !this.visible || !this.#root || !this.#cursor)
       return
 

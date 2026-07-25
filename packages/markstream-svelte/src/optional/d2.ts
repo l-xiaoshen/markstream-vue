@@ -7,7 +7,9 @@ export type D2Constructor = typeof D2
 export type D2Loader = OptionalPeerLoader<D2Constructor>
 export type D2Runtime = OptionalPeerRuntime<D2Constructor>
 
-const defaultD2Loader: D2Loader = async () => (await import('@terrastruct/d2')).D2
+async function defaultD2Loader(): Promise<D2Constructor> {
+  return (await import('@terrastruct/d2')).D2
+}
 
 export function createD2Runtime(
   loader: D2Loader = defaultD2Loader,

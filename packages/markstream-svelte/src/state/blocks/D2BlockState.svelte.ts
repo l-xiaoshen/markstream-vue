@@ -36,13 +36,6 @@ export class D2BlockState {
 
   readonly chrome: RichBlockState
   readonly renderer: D2Renderer
-  readonly closeModal: RichBlockState['closeModal']
-  readonly copy: RichBlockState['copy']
-  readonly resetZoom: RichBlockState['resetZoom']
-  readonly showButtonTooltip: RichBlockState['showButtonTooltip']
-  readonly showCopyTooltip: RichBlockState['showCopyTooltip']
-  readonly zoomIn: RichBlockState['zoomIn']
-  readonly zoomOut: RichBlockState['zoomOut']
 
   constructor(private readonly getInput: () => D2BlockInput) {
     this.#input = $derived(this.getInput())
@@ -101,17 +94,41 @@ export class D2BlockState {
       `transform: scale(${this.chrome.zoom}); transform-origin: center center;`,
     )
     this.zoom = $derived(this.chrome.zoom)
-
-    this.closeModal = this.chrome.closeModal
-    this.copy = this.chrome.copy
-    this.resetZoom = this.chrome.resetZoom
-    this.showButtonTooltip = this.chrome.showButtonTooltip
-    this.showCopyTooltip = this.chrome.showCopyTooltip
-    this.zoomIn = this.chrome.zoomIn
-    this.zoomOut = this.chrome.zoomOut
   }
 
-  #syncVisibility = async (visible: boolean): Promise<void> => {
+  closeModal(): void {
+    this.chrome.closeModal()
+  }
+
+  copy(): Promise<void> {
+    return this.chrome.copy()
+  }
+
+  resetZoom(): void {
+    this.chrome.resetZoom()
+  }
+
+  showButtonTooltip(
+    ...args: Parameters<RichBlockState['showButtonTooltip']>
+  ): void {
+    this.chrome.showButtonTooltip(...args)
+  }
+
+  showCopyTooltip(
+    ...args: Parameters<RichBlockState['showCopyTooltip']>
+  ): void {
+    this.chrome.showCopyTooltip(...args)
+  }
+
+  zoomIn(): void {
+    this.chrome.zoomIn()
+  }
+
+  zoomOut(): void {
+    this.chrome.zoomOut()
+  }
+
+  async #syncVisibility(visible: boolean): Promise<void> {
     if (!visible) {
       this.renderer.suspend()
       return
@@ -120,20 +137,20 @@ export class D2BlockState {
     this.renderer.requestRender(true)
   }
 
-  exportSvg = (): void => {
+  exportSvg(): void {
     if (this.svgMarkup)
       downloadSvgMarkup(this.svgMarkup, `d2-diagram-${Date.now()}.svg`)
   }
 
-  openModal = (): void => {
+  openModal(): void {
     this.chrome.openModal(Boolean(this.svgMarkup))
   }
 
-  switchMode = (mode: RichBlockMode): Promise<void> => {
-    return this.chrome.switchMode(mode, this.#syncVisibility)
+  switchMode(mode: RichBlockMode): Promise<void> {
+    return this.chrome.switchMode(mode, visible => this.#syncVisibility(visible))
   }
 
-  toggleCollapsed = (): Promise<void> => {
-    return this.chrome.toggleCollapsed(this.#syncVisibility)
+  toggleCollapsed(): Promise<void> {
+    return this.chrome.toggleCollapsed(visible => this.#syncVisibility(visible))
   }
 }

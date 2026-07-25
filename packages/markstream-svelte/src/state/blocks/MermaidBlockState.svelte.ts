@@ -1,5 +1,4 @@
 import type { CodeBlockNode } from 'stream-markdown-parser'
-import type { Attachment } from 'svelte/attachments'
 import type {
   NodeRendererMermaidProps,
   SvelteRenderContext,
@@ -52,15 +51,8 @@ export class MermaidBlockState {
 
   readonly chrome: RichBlockState
   readonly renderer: MermaidRenderer
-  readonly closeModal: RichBlockState['closeModal']
-  readonly copy: RichBlockState['copy']
-  readonly resetZoom: RichBlockState['resetZoom']
-  readonly showButtonTooltip: RichBlockState['showButtonTooltip']
-  readonly showCopyTooltip: RichBlockState['showCopyTooltip']
-  readonly zoomIn: RichBlockState['zoomIn']
-  readonly zoomOut: RichBlockState['zoomOut']
 
-  previewAttachment: Attachment<HTMLElement> = (element) => {
+  previewAttachment(element: HTMLElement) {
     this.#previewHost = element
     return () => {
       if (this.#previewHost === element)
@@ -132,14 +124,6 @@ export class MermaidBlockState {
     this.svgMarkup = $derived(this.renderer.svgMarkup)
     this.zoom = $derived(this.chrome.zoom)
 
-    this.closeModal = this.chrome.closeModal
-    this.copy = this.chrome.copy
-    this.resetZoom = this.chrome.resetZoom
-    this.showButtonTooltip = this.chrome.showButtonTooltip
-    this.showCopyTooltip = this.chrome.showCopyTooltip
-    this.zoomIn = this.chrome.zoomIn
-    this.zoomOut = this.chrome.zoomOut
-
     $effect(() => {
       const version = this.renderer.interactionVersion
       const preview = this.#previewHost
@@ -161,6 +145,38 @@ export class MermaidBlockState {
         cancelled = true
       }
     })
+  }
+
+  closeModal(): void {
+    this.chrome.closeModal()
+  }
+
+  copy(): Promise<void> {
+    return this.chrome.copy()
+  }
+
+  resetZoom(): void {
+    this.chrome.resetZoom()
+  }
+
+  showButtonTooltip(
+    ...args: Parameters<RichBlockState['showButtonTooltip']>
+  ): void {
+    this.chrome.showButtonTooltip(...args)
+  }
+
+  showCopyTooltip(
+    ...args: Parameters<RichBlockState['showCopyTooltip']>
+  ): void {
+    this.chrome.showCopyTooltip(...args)
+  }
+
+  zoomIn(): void {
+    this.chrome.zoomIn()
+  }
+
+  zoomOut(): void {
+    this.chrome.zoomOut()
   }
 
   #createSnapshot() {
@@ -195,7 +211,7 @@ export class MermaidBlockState {
     }
   }
 
-  #syncVisibility = async (visible: boolean): Promise<void> => {
+  async #syncVisibility(visible: boolean): Promise<void> {
     if (!visible) {
       this.renderer.suspend()
       return
@@ -204,24 +220,24 @@ export class MermaidBlockState {
     this.renderer.requestRender(true)
   }
 
-  exportSvg = (): void => {
+  exportSvg(): void {
     if (this.svgMarkup)
       downloadSvgMarkup(this.svgMarkup, `mermaid-diagram-${Date.now()}.svg`)
   }
 
-  openModal = (): void => {
+  openModal(): void {
     this.chrome.openModal(Boolean(this.svgMarkup))
   }
 
-  setModalHost = (element: HTMLElement | null): void => {
+  setModalHost(element: HTMLElement | null): void {
     this.#modalHost = element
   }
 
-  switchMode = (mode: RichBlockMode): Promise<void> => {
-    return this.chrome.switchMode(mode, this.#syncVisibility)
+  switchMode(mode: RichBlockMode): Promise<void> {
+    return this.chrome.switchMode(mode, visible => this.#syncVisibility(visible))
   }
 
-  toggleCollapsed = (): Promise<void> => {
-    return this.chrome.toggleCollapsed(this.#syncVisibility)
+  toggleCollapsed(): Promise<void> {
+    return this.chrome.toggleCollapsed(visible => this.#syncVisibility(visible))
   }
 }

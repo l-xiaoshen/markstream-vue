@@ -6,7 +6,7 @@ export type KatexModule = typeof katex
 export type KatexLoader = OptionalPeerLoader<KatexModule>
 export type KatexRuntime = OptionalPeerRuntime<KatexModule>
 
-const defaultKatexLoader: KatexLoader = async () => {
+async function defaultKatexLoader(): Promise<KatexModule> {
   const imported = await import('katex')
   try {
     await import('katex/contrib/mhchem')

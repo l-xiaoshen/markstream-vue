@@ -62,8 +62,9 @@ export interface MarkdownHtmlRenderer {
 }
 
 function createRenderer(markdownRuntime: MarkdownRuntime): MarkdownHtmlRenderer {
-  const getContext = (options: NestedMarkdownHtmlOptions) =>
-    createRenderContext(options, markdownRuntime)
+  function getContext(options: NestedMarkdownHtmlOptions) {
+    return createRenderContext(options, markdownRuntime)
+  }
 
   return {
     renderMarkdownToHtml(input) {

@@ -1,5 +1,4 @@
 import type { MonacoOptions, UseMonacoReturn } from 'stream-monaco'
-import type { Attachment } from 'svelte/attachments'
 import type { MonacoEditorKind } from './monacoEditorLayout'
 import { onDestroy, tick, untrack } from 'svelte'
 import { monacoRuntime } from '../../optional/monaco'
@@ -41,7 +40,7 @@ export class MonacoEditor {
   #refreshQueued = false
   #refreshTimer: ReturnType<typeof setTimeout> | undefined
 
-  attachment: Attachment<HTMLDivElement> = (element) => {
+  attachment(element: HTMLDivElement) {
     this.#host = element
     untrack(() => this.#scheduleRefresh(0))
     return () => {
@@ -78,7 +77,7 @@ export class MonacoEditor {
       this.#scheduleRefresh(refreshDelayMs)
     })
 
-    onDestroy(this.dispose)
+    onDestroy(() => this.dispose())
   }
 
   #clearRefreshTimer(): void {
@@ -199,7 +198,7 @@ export class MonacoEditor {
     }
   }
 
-  #refresh = async (): Promise<void> => {
+  async #refresh(): Promise<void> {
     if (this.#destroyed)
       return
     if (this.#refreshing) {
@@ -237,15 +236,15 @@ export class MonacoEditor {
     }, delay)
   }
 
-  refresh = async (): Promise<void> => {
+  async refresh(): Promise<void> {
     await this.#refresh()
   }
 
-  layout = (): void => {
+  layout(): void {
     this.#editorLayout.request()
   }
 
-  dispose = (): void => {
+  dispose(): void {
     if (this.#destroyed)
       return
     this.#destroyed = true

@@ -71,7 +71,7 @@ export function createCustomComponentRegistry<
   const scopedComponents = new Map<string, Mapping>()
   let revision = 0
 
-  const bumpRevision = () => {
+  function bumpRevision() {
     revision += 1
     for (const listener of [...listeners]) {
       try {
@@ -83,10 +83,10 @@ export function createCustomComponentRegistry<
     }
   }
 
-  const setCustomComponents = (
+  function setCustomComponents(
     idOrMapping: string | Mapping,
     maybeMapping?: Mapping,
-  ) => {
+  ) {
     if (typeof idOrMapping === 'string') {
       if (maybeMapping)
         scopedComponents.set(idOrMapping, { ...maybeMapping })
@@ -99,7 +99,7 @@ export function createCustomComponentRegistry<
     bumpRevision()
   }
 
-  const getCustomNodeComponents = (customId?: string): Mapping => {
+  function getCustomNodeComponents(customId?: string): Mapping {
     const globalMapping = scopedComponents.get(GLOBAL_KEY)
     const scopedMapping = customId
       ? scopedComponents.get(customId)
@@ -111,7 +111,7 @@ export function createCustomComponentRegistry<
     }
   }
 
-  const removeCustomComponents = (id: string) => {
+  function removeCustomComponents(id: string) {
     if (id === GLOBAL_KEY) {
       throw new Error(
         'removeCustomComponents: use clearGlobalCustomComponents for the global scope.',

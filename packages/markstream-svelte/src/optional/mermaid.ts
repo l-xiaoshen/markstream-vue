@@ -22,7 +22,9 @@ function computeInitKey(config: MermaidInitConfig) {
   return `${securityLevel}|htmlLabels:${htmlLabels === false ? '0' : '1'}`
 }
 
-const defaultMermaidLoader: MermaidLoader = async () => (await import('mermaid')).default
+async function defaultMermaidLoader(): Promise<MermaidModule> {
+  return (await import('mermaid')).default
+}
 
 export function createMermaidRuntime(
   loader: MermaidLoader = defaultMermaidLoader,
@@ -34,21 +36,21 @@ export function createMermaidRuntime(
     lastInitKey: null,
   }
 
-  const resetInitialization = () => {
+  function resetInitialization() {
     state.lastInitKey = null
   }
 
-  const setLoader: MermaidRuntime['setLoader'] = (loader) => {
+  function setLoader(loader: MermaidLoader | null): void {
     peerRuntime.setLoader(loader)
     resetInitialization()
   }
 
-  const enable: MermaidRuntime['enable'] = (loader) => {
+  function enable(loader?: MermaidLoader): void {
     peerRuntime.enable(loader)
     resetInitialization()
   }
 
-  const get = async (initConfig?: MermaidInitConfig): Promise<MermaidModule | null> => {
+  async function get(initConfig?: MermaidInitConfig): Promise<MermaidModule | null> {
     const instance = await peerRuntime.get()
     if (!instance || !initConfig)
       return instance

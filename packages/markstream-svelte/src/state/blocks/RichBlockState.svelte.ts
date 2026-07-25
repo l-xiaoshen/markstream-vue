@@ -29,14 +29,14 @@ export class RichBlockState {
     })
   }
 
-  #clearCopyTimer = (): void => {
+  #clearCopyTimer(): void {
     if (this.#copyTimer === undefined)
       return
     clearTimeout(this.#copyTimer)
     this.#copyTimer = undefined
   }
 
-  copy = async (): Promise<void> => {
+  async copy(): Promise<void> {
     const source = this.options.getSource()
     if (!await copyTextToClipboard(source))
       return
@@ -52,10 +52,10 @@ export class RichBlockState {
     }, 1000)
   }
 
-  switchMode = async (
+  async switchMode(
     mode: RichBlockMode,
     onVisibilityChange?: RichBlockVisibilityHandler,
-  ): Promise<void> => {
+  ): Promise<void> {
     const nextShowSource = mode === 'source'
     if (this.showSource === nextShowSource)
       return
@@ -63,18 +63,18 @@ export class RichBlockState {
     await onVisibilityChange?.(!this.collapsed && !this.showSource)
   }
 
-  toggleCollapsed = async (
+  async toggleCollapsed(
     onVisibilityChange?: RichBlockVisibilityHandler,
-  ): Promise<void> => {
+  ): Promise<void> {
     this.collapsed = !this.collapsed
     await onVisibilityChange?.(!this.collapsed && !this.showSource)
   }
 
-  showButtonTooltip = (
+  showButtonTooltip(
     event: MouseEvent | FocusEvent,
     text: string,
     placement: TooltipPlacement = 'top',
-  ): void => {
+  ): void {
     const target = event.currentTarget
     if (
       !(target instanceof HTMLElement)
@@ -92,32 +92,32 @@ export class RichBlockState {
     )
   }
 
-  showCopyTooltip = (
+  showCopyTooltip(
     event: MouseEvent | FocusEvent,
     copiedLabel: string,
     copyLabel: string,
-  ): void => {
+  ): void {
     this.showButtonTooltip(event, this.copied ? copiedLabel : copyLabel)
   }
 
-  closeModal = (): void => {
+  closeModal(): void {
     this.modalOpen = false
   }
 
-  openModal = (canOpen = true): void => {
+  openModal(canOpen = true): void {
     if (canOpen)
       this.modalOpen = true
   }
 
-  resetZoom = (): void => {
+  resetZoom(): void {
     this.zoom = 1
   }
 
-  zoomIn = (): void => {
+  zoomIn(): void {
     this.zoom = Math.min(3, Math.round((this.zoom + 0.1) * 10) / 10)
   }
 
-  zoomOut = (): void => {
+  zoomOut(): void {
     this.zoom = Math.max(0.5, Math.round((this.zoom - 0.1) * 10) / 10)
   }
 }

@@ -7,9 +7,9 @@ export type InfographicConstructor = typeof Infographic
 export type InfographicLoader = OptionalPeerLoader<InfographicConstructor>
 export type InfographicRuntime = OptionalPeerRuntime<InfographicConstructor>
 
-const defaultInfographicLoader: InfographicLoader = async () => (
-  await import('@antv/infographic')
-).Infographic
+async function defaultInfographicLoader(): Promise<InfographicConstructor> {
+  return (await import('@antv/infographic')).Infographic
+}
 
 export function createInfographicRuntime(
   loader: InfographicLoader = defaultInfographicLoader,

@@ -73,7 +73,7 @@ function createHeaderActions(
   if (options.showTooltips !== false)
     copyButton.title = 'Copy source'
 
-  const handleCopy = () => {
+  function handleCopy() {
     void copyTextToClipboard(source)
     options.onCopy?.(source)
   }

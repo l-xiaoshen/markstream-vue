@@ -1,4 +1,3 @@
-import type { Attachment } from 'svelte/attachments'
 import type { InfographicInstance } from '../../optional/infographic'
 import { onDestroy, onMount, tick, untrack } from 'svelte'
 import { infographicRuntime } from '../../optional/infographic'
@@ -46,7 +45,7 @@ export class InfographicRenderer {
   #renderHost = $state.raw<HTMLDivElement | null>(null)
   #renderTimer: ReturnType<typeof setTimeout> | undefined
 
-  attachment: Attachment<HTMLDivElement> = (element) => {
+  attachment(element: HTMLDivElement) {
     this.#renderHost = element
     return () => {
       if (this.#renderHost !== element)
@@ -137,7 +136,7 @@ export class InfographicRenderer {
     this.#scheduleDrain(this.#pendingJob?.force ?? false)
   }
 
-  #drain = async (): Promise<void> => {
+  async #drain(): Promise<void> {
     if (this.#active || !this.#pendingJob || !this.#mounted)
       return
     const job = this.#pendingJob
@@ -220,10 +219,10 @@ export class InfographicRenderer {
     }
   }
 
-  requestRender = (
+  requestRender(
     force = false,
     snapshot = this.#createSnapshot(),
-  ): void => {
+  ): void {
     if (!this.#mounted || !this.options.getActive() || !snapshot || !snapshot.source.trim())
       return
     if (this.#pendingJob?.snapshot.signature === snapshot.signature && !force)
@@ -257,7 +256,7 @@ export class InfographicRenderer {
     this.#scheduleDrain(force)
   }
 
-  suspend = (): void => {
+  suspend(): void {
     this.#generation += 1
     this.#pendingJob = null
     this.#activeSignature = ''
@@ -265,7 +264,7 @@ export class InfographicRenderer {
     this.#clearTimer()
   }
 
-  reset = (): void => {
+  reset(): void {
     this.suspend()
     this.#destroyInstance()
     clearElement(this.#renderHost)
@@ -276,7 +275,7 @@ export class InfographicRenderer {
     this.#lastSuppressedSignature = ''
   }
 
-  getRenderedSvg = (): string => {
+  getRenderedSvg(): string {
     const svg = this.#renderHost?.querySelector('svg')
     return svg ? toSafeSvgMarkup(svg.outerHTML) : ''
   }

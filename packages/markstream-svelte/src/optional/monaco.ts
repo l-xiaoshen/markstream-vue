@@ -12,7 +12,9 @@ export interface MonacoRuntime {
   preload: () => Promise<boolean>
 }
 
-const defaultMonacoLoader: MonacoLoader = () => import('stream-monaco')
+function defaultMonacoLoader(): Promise<MonacoRuntimeModule> {
+  return import('stream-monaco')
+}
 
 async function warmupShikiTokenizer(mod: MonacoRuntimeModule) {
   try {
@@ -44,7 +46,7 @@ export function createMonacoRuntime(
     workersPreloaded: false,
   }
 
-  const prepare = async (mod: MonacoRuntimeModule) => {
+  async function prepare(mod: MonacoRuntimeModule) {
     if (state.workersPreloaded)
       return
     if (state.preparePromise)
@@ -59,7 +61,7 @@ export function createMonacoRuntime(
     await state.preparePromise
   }
 
-  const get = async (): Promise<MonacoRuntimeModule | null> => {
+  async function get(): Promise<MonacoRuntimeModule | null> {
     if (typeof window === 'undefined')
       return null
 

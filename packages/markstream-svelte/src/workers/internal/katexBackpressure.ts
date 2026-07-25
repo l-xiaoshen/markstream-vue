@@ -33,7 +33,7 @@ export function createKaTeXBackpressureController(
   const defaults = { ...initialDefaults }
   const drainWaiters = new Set<() => void>()
 
-  const notifyIfSlotAvailable = () => {
+  function notifyIfSlotAvailable() {
     if (!hasAvailableSlot() || drainWaiters.size === 0)
       return
 
@@ -49,7 +49,7 @@ export function createKaTeXBackpressureController(
     }
   }
 
-  const waitForSlot = (timeout = 2000, signal?: AbortSignal): Promise<void> => {
+  function waitForSlot(timeout = 2000, signal?: AbortSignal): Promise<void> {
     if (hasAvailableSlot())
       return Promise.resolve()
 
@@ -69,7 +69,7 @@ export function createKaTeXBackpressureController(
         onDrain: () => {},
       }
 
-      const settle = (error?: Error) => {
+      function settle(error?: Error) {
         if (waiterState.settled)
           return
         waiterState.settled = true

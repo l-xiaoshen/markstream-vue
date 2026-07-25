@@ -1,5 +1,4 @@
 <script lang="ts">
-  import type { Attachment } from 'svelte/attachments'
   import { getSafeI18n } from '../i18n/safeI18n'
 
   interface Props {
@@ -22,7 +21,7 @@
 
   const { t } = getSafeI18n()
   const sandbox = $derived(htmlPreviewSandbox ?? (htmlPreviewAllowScripts ? 'allow-scripts' : ''))
-  const closeButtonAttachment: Attachment<HTMLButtonElement> = (element) => {
+  function closeButtonAttachment(element: HTMLButtonElement) {
     const previousFocus = document.activeElement instanceof HTMLElement
       ? document.activeElement
       : null

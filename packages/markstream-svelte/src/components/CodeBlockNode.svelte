@@ -51,7 +51,7 @@
         </div>
         <div class="code-block-header__actions">
           {#if options?.showCopyButton !== false}
-            <button type="button" class="code-action-btn" aria-label={block.copied ? t('common.copied') : t('common.copy')} onblur={() => hideTooltip()} onclick={block.copy} onfocus={showCopyTooltip} onmouseleave={() => hideTooltip()} onmouseenter={showCopyTooltip}>
+            <button type="button" class="code-action-btn" aria-label={block.copied ? t('common.copied') : t('common.copy')} onblur={() => hideTooltip()} onclick={() => void block.copy()} onfocus={showCopyTooltip} onmouseleave={() => hideTooltip()} onmouseenter={showCopyTooltip}>
               {#if block.copied}
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 6L9 17l-5-5" /></svg>
               {:else}
@@ -71,17 +71,17 @@
             </button>
           {/if}
           {#if block.isPreviewable && options?.showPreviewButton !== false}
-            <button type="button" class="code-action-btn" aria-label={t('common.preview')} onblur={() => hideTooltip()} onclick={block.togglePreview} onfocus={(event) => block.showButtonTooltip(event, t('common.preview') || 'Preview')} onmouseleave={() => hideTooltip()} onmouseenter={(event) => block.showButtonTooltip(event, t('common.preview') || 'Preview')}>
+            <button type="button" class="code-action-btn" aria-label={t('common.preview')} onblur={() => hideTooltip()} onclick={() => block.togglePreview()} onfocus={(event) => block.showButtonTooltip(event, t('common.preview') || 'Preview')} onmouseleave={() => hideTooltip()} onmouseenter={(event) => block.showButtonTooltip(event, t('common.preview') || 'Preview')}>
               <svg viewBox="0 0 24 24" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"><path d="M2.062 12.348a1 1 0 0 1 0-.696a10.75 10.75 0 0 1 19.876 0a1 1 0 0 1 0 .696a10.75 10.75 0 0 1-19.876 0" /><circle cx="12" cy="12" r="3" /></g></svg>
             </button>
           {/if}
           {#if options?.showExpandButton !== false}
-            <button type="button" class="code-action-btn" aria-pressed={block.expanded} aria-label={block.expanded ? t('common.collapse') : t('common.expand')} onblur={() => hideTooltip()} onclick={block.toggleExpanded} onfocus={(event) => block.showButtonTooltip(event, block.expanded ? (t('common.collapse') || 'Collapse') : (t('common.expand') || 'Expand'))} onmouseleave={() => hideTooltip()} onmouseenter={(event) => block.showButtonTooltip(event, block.expanded ? (t('common.collapse') || 'Collapse') : (t('common.expand') || 'Expand'))}>
+            <button type="button" class="code-action-btn" aria-pressed={block.expanded} aria-label={block.expanded ? t('common.collapse') : t('common.expand')} onblur={() => hideTooltip()} onclick={() => block.toggleExpanded()} onfocus={(event) => block.showButtonTooltip(event, block.expanded ? (t('common.collapse') || 'Collapse') : (t('common.expand') || 'Expand'))} onmouseleave={() => hideTooltip()} onmouseenter={(event) => block.showButtonTooltip(event, block.expanded ? (t('common.collapse') || 'Collapse') : (t('common.expand') || 'Expand'))}>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d={block.expanded ? 'm14 10l7-7m-1 7h-6V4M3 21l7-7m-6 0h6v6' : 'M15 3h6v6m0-6l-7 7M3 21l7-7m-1 7H3v-6'} /></svg>
             </button>
           {/if}
           {#if options?.showCollapseButton !== false}
-            <button type="button" class="code-action-btn" aria-pressed={block.collapsed} aria-label={block.collapsed ? t('common.expand') : t('common.collapse')} onblur={() => hideTooltip()} onclick={block.toggleCollapsed} onfocus={(event) => block.showButtonTooltip(event, block.collapsed ? (t('common.expand') || 'Expand') : (t('common.collapse') || 'Collapse'))} onmouseleave={() => hideTooltip()} onmouseenter={(event) => block.showButtonTooltip(event, block.collapsed ? (t('common.expand') || 'Expand') : (t('common.collapse') || 'Collapse'))}>
+            <button type="button" class="code-action-btn" aria-pressed={block.collapsed} aria-label={block.collapsed ? t('common.expand') : t('common.collapse')} onblur={() => hideTooltip()} onclick={() => void block.toggleCollapsed()} onfocus={(event) => block.showButtonTooltip(event, block.collapsed ? (t('common.expand') || 'Expand') : (t('common.collapse') || 'Collapse'))} onmouseleave={() => hideTooltip()} onmouseenter={(event) => block.showButtonTooltip(event, block.collapsed ? (t('common.expand') || 'Expand') : (t('common.collapse') || 'Collapse'))}>
               <svg style:rotate={block.collapsed ? '0deg' : '90deg'} viewBox="0 0 24 24" aria-hidden="true"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m9 18l6-6l-6-6" /></svg>
             </button>
           {/if}
@@ -92,7 +92,7 @@
     {#if !block.collapsed}
       <div class:code-block-body--expanded={block.expanded} class="code-block-body">
         {#if !block.shouldDelayEditor}
-          <div {@attach block.editorAttachment} class:is-hidden={block.showPreFallback} class="code-editor-container"></div>
+          <div {@attach (element) => block.editorAttachment(element)} class:is-hidden={block.showPreFallback} class="code-editor-container"></div>
         {/if}
         {#if block.showPreFallback}
           <pre class="code-pre-fallback"><code class={block.preLanguageClass ? `language-${block.preLanguageClass}` : undefined}>{block.code}</code></pre>
@@ -101,7 +101,7 @@
     {/if}
 
     {#if block.previewOpen && block.isPreviewable}
-      <HtmlPreviewFrame code={block.code} title={block.previewTitle} isDark={block.resolvedIsDark} htmlPreviewAllowScripts={options?.htmlPreviewAllowScripts ?? false} htmlPreviewSandbox={options?.htmlPreviewSandbox} onClose={block.closePreview} />
+      <HtmlPreviewFrame code={block.code} title={block.previewTitle} isDark={block.resolvedIsDark} htmlPreviewAllowScripts={options?.htmlPreviewAllowScripts ?? false} htmlPreviewSandbox={options?.htmlPreviewSandbox} onClose={() => block.closePreview()} />
     {/if}
   </div>
 {/if}

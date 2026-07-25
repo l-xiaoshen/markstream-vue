@@ -52,7 +52,7 @@ export function createMermaidWorkerClient(
   }
   const pending = createMermaidPendingRequests()
 
-  const ensureWorker = () => {
+  function ensureWorker() {
     if (state.worker)
       return state.worker
 
@@ -62,7 +62,7 @@ export function createMermaidWorkerClient(
     return null
   }
 
-  const setWorker = (nextWorker: Worker) => {
+  function setWorker(nextWorker: Worker) {
     state.worker = nextWorker
     state.workerInitError = null
     const current = nextWorker
@@ -144,7 +144,7 @@ export function createMermaidWorkerClient(
     }
   }
 
-  const clearWorker = () => {
+  function clearWorker() {
     try {
       state.worker?.terminate()
     }
@@ -159,11 +159,11 @@ export function createMermaidWorkerClient(
     }
   }
 
-  const callWorker = (
+  function callWorker(
     action: MermaidWorkerAction,
     payload: MermaidWorkerPayload,
     timeout = 1400,
-  ): Promise<MermaidWorkerResult> => {
+  ): Promise<MermaidWorkerResult> {
     if (!checkEnabled())
       return Promise.reject(new FeatureDisabledError('MermaidDisabled', 'MERMAID_DISABLED', 'Mermaid'))
     if (state.workerInitError)

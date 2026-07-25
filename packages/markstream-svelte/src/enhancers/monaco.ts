@@ -81,7 +81,7 @@ export async function enhanceMonaco(
 
     let helpers: MonacoRuntimeHelpers | null = null
     let editorCleaned = false
-    const cleanupEditor = () => {
+    function cleanupEditor() {
       if (editorCleaned)
         return
       editorCleaned = true

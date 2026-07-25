@@ -74,7 +74,7 @@ export function createTooltipService(): TooltipService {
     visible: false,
   }
 
-  const clearTimers = () => {
+  function clearTimers() {
     if (state.showTimer) {
       clearTimeout(state.showTimer)
       state.showTimer = null
@@ -85,7 +85,7 @@ export function createTooltipService(): TooltipService {
     }
   }
 
-  const ensureTooltipEl = () => {
+  function ensureTooltipEl() {
     if (state.tooltipEl || typeof document === 'undefined')
       return state.tooltipEl
 
@@ -102,14 +102,15 @@ export function createTooltipService(): TooltipService {
     return tooltip
   }
 
-  const hide = (immediate = false) => {
+  function hide(immediate = false) {
     const tooltip = state.tooltipEl
     if (!tooltip)
       return
+    const activeTooltip = tooltip
 
     clearTimers()
-    const doHide = () => {
-      tooltip.dataset.visible = 'false'
+    function doHide() {
+      activeTooltip.dataset.visible = 'false'
       state.visible = false
       if (state.currentAnchor && state.currentId) {
         try {
@@ -129,46 +130,48 @@ export function createTooltipService(): TooltipService {
       state.hideTimer = setTimeout(doHide, 120)
   }
 
-  const show: TooltipService['show'] = (
-    anchor,
-    content,
-    placement = 'top',
+  function show(
+    anchor: HTMLElement | null,
+    content: string,
+    placement: TooltipPlacement = 'top',
     immediate = false,
-    _origin,
-    isDark,
-  ) => {
+    _origin?: TooltipOrigin,
+    isDark?: boolean | null,
+  ): void {
     if (!anchor || typeof document === 'undefined')
       return
 
     const tooltip = ensureTooltipEl()
     if (!tooltip)
       return
+    const activeAnchor = anchor
+    const activeTooltip = tooltip
 
     clearTimers()
-    const doShow = async () => {
-      state.currentAnchor = anchor
-      tooltip.textContent = content
-      tooltip.dataset.placement = placement
-      tooltip.dataset.dark = detectDarkModeHint(isDark) ? 'true' : 'false'
-      tooltip.dataset.visible = 'false'
+    async function doShow() {
+      state.currentAnchor = activeAnchor
+      activeTooltip.textContent = content
+      activeTooltip.dataset.placement = placement
+      activeTooltip.dataset.dark = detectDarkModeHint(isDark) ? 'true' : 'false'
+      activeTooltip.dataset.visible = 'false'
       state.nextId += 1
       const id = `tooltip-${Date.now()}-${state.nextId}`
       state.currentId = id
-      tooltip.id = id
+      activeTooltip.id = id
       try {
-        anchor.setAttribute('aria-describedby', id)
+        activeAnchor.setAttribute('aria-describedby', id)
       }
       catch {}
 
-      await updatePosition(anchor, tooltip, placement)
+      await updatePosition(activeAnchor, activeTooltip, placement)
       if (state.currentId !== id)
         return
 
-      tooltip.dataset.visible = 'true'
+      activeTooltip.dataset.visible = 'true'
       state.visible = true
       state.cleanupAutoUpdate?.()
-      state.cleanupAutoUpdate = autoUpdate(anchor, tooltip, () => {
-        void updatePosition(anchor, tooltip, placement)
+      state.cleanupAutoUpdate = autoUpdate(activeAnchor, activeTooltip, () => {
+        void updatePosition(activeAnchor, activeTooltip, placement)
       })
     }
 

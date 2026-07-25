@@ -26,19 +26,19 @@ export function createOptionalPeerRuntime<Value>(
     pending: null,
   }
 
-  const reset = () => {
+  function reset() {
     state.attempted = false
     state.cached = null
     state.generation += 1
     state.pending = null
   }
 
-  const setLoader = (loader: OptionalPeerLoader<Value> | null) => {
+  function setLoader(loader: OptionalPeerLoader<Value> | null) {
     state.loader = loader
     reset()
   }
 
-  const get = async (): Promise<Value | null> => {
+  async function get(): Promise<Value | null> {
     if (state.cached !== null)
       return state.cached
     if (state.pending)

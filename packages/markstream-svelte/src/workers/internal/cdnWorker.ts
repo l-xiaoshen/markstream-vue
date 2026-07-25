@@ -32,7 +32,7 @@ export function createModuleWorkerFromSource<InitMessage>(
   const url = URL.createObjectURL(blob)
   let revoked = false
 
-  const dispose = () => {
+  function dispose() {
     if (revoked)
       return
     revoked = true

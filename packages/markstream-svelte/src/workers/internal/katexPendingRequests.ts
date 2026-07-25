@@ -24,12 +24,12 @@ export function createKaTeXPendingRequests(
 ): KaTeXPendingRequests {
   const pending = new Map<string, PendingKaTeXRender>()
 
-  const cleanup = (active: PendingKaTeXRender) => {
+  function cleanup(active: PendingKaTeXRender) {
     clearTimeout(active.timeoutId)
     active.signal?.removeEventListener('abort', active.onAbort)
   }
 
-  const take = (id: string): PendingKaTeXRender | null => {
+  function take(id: string): PendingKaTeXRender | null {
     const active = pending.get(id)
     if (!active)
       return null
@@ -40,7 +40,7 @@ export function createKaTeXPendingRequests(
     return active
   }
 
-  const reject = (id: string, error: unknown) => {
+  function reject(id: string, error: unknown) {
     const active = take(id)
     if (!active)
       return false
@@ -48,7 +48,7 @@ export function createKaTeXPendingRequests(
     return true
   }
 
-  const resolve = (id: string, html: string) => {
+  function resolve(id: string, html: string) {
     const active = take(id)
     if (!active)
       return false
@@ -72,7 +72,7 @@ export function createKaTeXPendingRequests(
     },
     resolve,
     start: (id, timeout, signal) => new Promise<string>((resolvePromise, rejectPromise) => {
-      const onAbort = () => {
+      function onAbort() {
         reject(id, new AbortRuntimeError())
       }
       const timeoutId = setTimeout(() => {

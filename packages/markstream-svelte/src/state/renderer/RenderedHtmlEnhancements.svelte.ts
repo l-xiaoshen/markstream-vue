@@ -1,4 +1,3 @@
-import type { Attachment } from 'svelte/attachments'
 import type {
   EnhanceRenderedHtmlOptions,
   RenderedHtmlEnhancementHandle,
@@ -28,7 +27,7 @@ export class RenderedHtmlEnhancements {
   #refreshing = false
   #root: HTMLElement | null = null
 
-  attachment: Attachment<HTMLElement> = (element) => {
+  attachment(element: HTMLElement) {
     this.#root = element
     const input = untrack(this.getInput)
     if (input.enabled !== false)

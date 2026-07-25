@@ -31,15 +31,15 @@ export interface RenderedHtmlEnhancer {
 export function createRenderedHtmlEnhancer(): RenderedHtmlEnhancer {
   const rootHandles = new WeakMap<HTMLElement, RenderedHtmlEnhancementHandle>()
 
-  const dispose = (root: HTMLElement | null | undefined): void => {
+  function dispose(root: HTMLElement | null | undefined): void {
     if (root)
       rootHandles.get(root)?.dispose()
   }
 
-  const enhance = async (
+  async function enhance(
     root: HTMLElement,
     options: EnhanceRenderedHtmlOptions = {},
-  ): Promise<RenderedHtmlEnhancementHandle> => {
+  ): Promise<RenderedHtmlEnhancementHandle> {
     dispose(root)
 
     const lifecycle: EnhancementLifecycle = createEnhancementLifecycle(options.isCancelled, () => {

@@ -66,7 +66,7 @@ export function createKaTeXWorkerClient(
   )
   notifySlotAvailable = backpressure.notifyIfSlotAvailable
 
-  const ensureWorker = () => {
+  function ensureWorker() {
     if (state.worker)
       return state.worker
 
@@ -76,7 +76,7 @@ export function createKaTeXWorkerClient(
     return null
   }
 
-  const setWorker = (nextWorker: Worker) => {
+  function setWorker(nextWorker: Worker) {
     state.worker = nextWorker
     state.workerInitError = null
     const current = nextWorker
@@ -137,7 +137,7 @@ export function createKaTeXWorkerClient(
     }
   }
 
-  const clearWorker = () => {
+  function clearWorker() {
     state.worker?.terminate()
     state.worker = null
     state.workerInitError = null
@@ -148,12 +148,12 @@ export function createKaTeXWorkerClient(
     ))
   }
 
-  const render = async (
+  async function render(
     content: string,
     displayMode = true,
     timeout = 2000,
     signal?: AbortSignal,
-  ): Promise<string> => {
+  ): Promise<string> {
     if (!checkEnabled())
       throw new FeatureDisabledError('KaTeXDisabled', 'KATEX_DISABLED', 'KaTeX')
     if (state.workerInitError)
@@ -193,11 +193,11 @@ export function createKaTeXWorkerClient(
   const waitForSlot = backpressure.waitForSlot
   const setBackpressureDefaults = backpressure.setDefaults
 
-  const renderWithBackpressure = async (
+  async function renderWithBackpressure(
     content: string,
     displayMode = true,
     renderOptions: BackpressureOptions = {},
-  ): Promise<string> => {
+  ): Promise<string> {
     if (!checkEnabled())
       throw new FeatureDisabledError('KaTeXDisabled', 'KATEX_DISABLED', 'KaTeX')
 

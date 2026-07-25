@@ -18,26 +18,7 @@
     <MarkdownRender
       content={node.content}
       final={context?.final ?? node.loading === false}
-      customId={context?.customId}
-      isDark={context?.isDark ?? false}
-      typewriter={context?.typewriter ?? true}
-      fade={context?.fade ?? true}
-      smoothStreaming={context?.smoothStreaming ?? 'auto'}
-      smoothStreamingOptions={context?.smoothStreamingOptions}
-      customHtmlTags={context?.customHtmlTags ?? ['thinking']}
-      customMarkdownIt={context?.customMarkdownIt}
-      parseOptions={context?.parseOptions}
-      allowHtml={context?.allowHtml}
-      htmlPolicy={context?.htmlPolicy}
-      renderCodeBlocksAsPre={context?.renderCodeBlocksAsPre}
-      codeBlockProps={context?.codeBlockProps}
-      mermaidProps={context?.mermaidProps}
-      d2Props={context?.d2Props}
-      infographicProps={context?.infographicProps}
-      imageProps={context?.imageProps}
-      mathProps={context?.mathProps}
-      showTooltips={context?.showTooltips}
-      batchRendering={context?.batchRendering}
+      {context}
     />
   </div>
 </section>

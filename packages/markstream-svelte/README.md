@@ -152,14 +152,13 @@ Use the scoped registry when several renderers intentionally share a mapping:
   <MarkdownRender
     content={node.content}
     final={context?.final ?? node.loading === false}
-    customId={context?.customId}
-    smoothStreaming={context?.smoothStreaming ?? 'auto'}
-    smoothStreamingOptions={context?.smoothStreamingOptions}
-    batchRendering={context?.batchRendering}
-    customHtmlTags={['thinking']}
+    {context}
   />
 </section>
 ```
+
+Nested renderers can forward the complete parent configuration with
+`{context}`. Explicit props such as `final` override the inherited value.
 
 ## Typed nodes
 

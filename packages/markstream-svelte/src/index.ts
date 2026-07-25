@@ -173,6 +173,7 @@ export type {
   NodeRendererInput,
   NodeRendererMathProps,
   NodeRendererMermaidProps,
+  NodeRendererOptions,
   NodeRendererProps,
   RendererCustomComponentMap,
   SvelteRenderContext,

@@ -27,107 +27,62 @@
   let {
     content = '',
     nodes = null,
-    final = undefined,
-    parseOptions = undefined,
-    customMarkdownIt = undefined,
-    debugPerformance = false,
-    customHtmlTags = undefined,
-    htmlPolicy = 'safe',
-    codeBlockStream = true,
-    codeBlockDarkTheme = undefined,
-    codeBlockLightTheme = undefined,
-    codeBlockMonacoOptions = undefined,
-    renderCodeBlocksAsPre = false,
-    codeBlockMinWidth = undefined,
-    codeBlockMaxWidth = undefined,
-    codeBlockProps = undefined,
-    mermaidProps = undefined,
-    d2Props = undefined,
-    infographicProps = undefined,
-    imageProps = undefined,
-    mathProps = undefined,
+    context = undefined,
     customComponents = undefined,
-    showTooltips = true,
-    themes = undefined,
-    isDark = false,
-    customId = undefined,
     indexKey = undefined,
-    typewriter = false,
-    fade = true,
-    batchRendering = true,
-    initialRenderBatchSize = 40,
-    renderBatchSize = 80,
-    renderBatchDelay = 16,
-    renderBatchBudgetMs = 6,
-    renderBatchIdleTimeoutMs = 120,
-    maxLiveNodes = 320,
-    allowHtml = true,
-    smoothStreaming = 'auto',
-    smoothStreamingOptions = undefined,
     className = '',
     onCopy = undefined,
     onHandleArtifactClick = undefined,
     onClick = undefined,
     onMouseover = undefined,
     onMouseout = undefined,
+    ...options
   }: NodeRendererComponentProps = $props()
+
+  const inheritedOptions = $derived.by(() => {
+    if (!context)
+      return {}
+    const {
+      customComponents: _customComponents,
+      events: _events,
+      textStreamState: _textStreamState,
+      ...options
+    } = context
+    return options
+  })
+  const resolvedOptions = $derived({
+    ...inheritedOptions,
+    ...options,
+  })
 
   let streamRenderVersion = $state(0)
   let previousContent: NodeRendererProps<TCustomNode>['content']
   let previousNodes: NodeRendererProps<TCustomNode>['nodes']
 
   const textStreamState = new Map<string, string>()
-  const scopedCustomComponents = new ScopedCustomComponents(() => customId)
+  const scopedCustomComponents = new ScopedCustomComponents(
+    () => resolvedOptions.customId,
+  )
   const rendererStream = new NodeRendererStream({
     getContent: () => content,
     getHasProvidedNodes: () => Array.isArray(nodes),
-    getRequestedFinal: () => final ?? parseOptions?.final,
-    getSmoothStreaming: () => smoothStreaming,
-    getSmoothStreamingOptions: () => smoothStreamingOptions,
-    getTypewriter: () => typewriter,
-    getMaxLiveNodes: () => maxLiveNodes,
+    getRequestedFinal: () => (
+      resolvedOptions.final ?? resolvedOptions.parseOptions?.final
+    ),
+    getSmoothStreaming: () => resolvedOptions.smoothStreaming ?? 'auto',
+    getSmoothStreamingOptions: () => resolvedOptions.smoothStreamingOptions,
+    getTypewriter: () => resolvedOptions.typewriter ?? false,
+    getMaxLiveNodes: () => resolvedOptions.maxLiveNodes ?? 320,
   })
 
+  const activeOptions = $derived({
+    ...resolvedOptions,
+    final: rendererStream.effectiveFinal,
+  })
   const rendererProps = $derived({
+    ...activeOptions,
     content: rendererStream.renderContent,
     nodes,
-    final: rendererStream.effectiveFinal,
-    parseOptions,
-    customMarkdownIt,
-    debugPerformance,
-    customHtmlTags,
-    htmlPolicy,
-    codeBlockStream,
-    codeBlockDarkTheme,
-    codeBlockLightTheme,
-    codeBlockMonacoOptions,
-    renderCodeBlocksAsPre,
-    codeBlockMinWidth,
-    codeBlockMaxWidth,
-    codeBlockProps,
-    mermaidProps,
-    d2Props,
-    infographicProps,
-    imageProps,
-    mathProps,
-    customComponents,
-    showTooltips,
-    themes,
-    isDark,
-    customId,
-    indexKey,
-    typewriter,
-    fade,
-    batchRendering,
-    initialRenderBatchSize,
-    renderBatchSize,
-    renderBatchDelay,
-    renderBatchBudgetMs,
-    renderBatchIdleTimeoutMs,
-    maxLiveNodes,
-    allowHtml,
-    smoothStreaming,
-    smoothStreamingOptions,
   } satisfies NodeRendererProps<TCustomNode>)
 
   $effect.pre(() => {
@@ -143,6 +98,7 @@
   })
 
   const parsedNodes = $derived.by(() => {
+    const debugPerformance = resolvedOptions.debugPerformance ?? false
     const start = debugPerformance && typeof performance !== 'undefined'
       ? performance.now()
       : 0
@@ -158,27 +114,33 @@
   })
 
   const mergedComponents = $derived(toRuntimeCustomComponentMap(
-    customComponents
-      ? { ...scopedCustomComponents.components, ...customComponents }
-      : scopedCustomComponents.components,
+    {
+      ...context?.customComponents,
+      ...scopedCustomComponents.components,
+      ...customComponents,
+    },
   ))
   const renderContext = $derived<SvelteRenderContext>(buildRenderContext(
-    rendererProps,
-    { onCopy, onHandleArtifactClick },
+    activeOptions,
+    {
+      onCopy,
+      onHandleArtifactClick,
+    },
     textStreamState,
     mergedComponents,
+    context,
   ))
 
   const renderBatch = new RenderBatch(
     () => parsedNodes.length,
     () => ({
-      enabled: batchRendering,
+      enabled: resolvedOptions.batchRendering ?? true,
       final: rendererStream.effectiveFinal,
-      initialSize: initialRenderBatchSize,
-      size: renderBatchSize,
-      delayMs: renderBatchDelay,
-      budgetMs: renderBatchBudgetMs,
-      idleTimeoutMs: renderBatchIdleTimeoutMs,
+      initialSize: resolvedOptions.initialRenderBatchSize ?? 40,
+      size: resolvedOptions.renderBatchSize ?? 80,
+      delayMs: resolvedOptions.renderBatchDelay ?? 16,
+      budgetMs: resolvedOptions.renderBatchBudgetMs ?? 6,
+      idleTimeoutMs: resolvedOptions.renderBatchIdleTimeoutMs ?? 120,
     }),
   )
   const renderedNodes = $derived(parsedNodes.slice(0, renderBatch.count))
@@ -209,7 +171,7 @@
     getNodes: () => parsedNodes,
     getRawContent: () => rendererStream.renderContent,
     getFinal: () => rendererStream.effectiveFinal,
-    getEnabled: () => typewriter,
+    getEnabled: () => resolvedOptions.typewriter ?? false,
     getUsesProvidedNodes: () => rendererStream.hasProvidedNodes,
   })
 
@@ -223,7 +185,11 @@
       onMouseout?.(event)
   }
 
-  const rootKey = $derived(indexKey == null ? 'markdown-renderer' : String(indexKey))
+  const rootKey = $derived(
+    indexKey == null
+      ? 'markdown-renderer'
+      : String(indexKey),
+  )
 </script>
 
 <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -233,8 +199,8 @@
   {@attach (element) => htmlEnhancements.attachment(element)}
   {@attach (element) => typewriterCursor.rootAttachment(element)}
   class="markstream-svelte markdown-renderer {className}"
-  class:dark={isDark}
-  data-custom-id={customId}
+  class:dark={renderContext.isDark}
+  data-custom-id={renderContext.customId}
   onclick={onClick}
   onmouseover={handleMouseover}
   onmouseout={handleMouseout}
@@ -243,7 +209,7 @@
     <div class="node-slot" data-node-index={index} data-node-type={node.type}>
       <div
         class="node-content"
-        class:fade-node={fade && node.type !== 'code_block'}
+        class:fade-node={renderContext.fade && node.type !== 'code_block'}
         data-node-index={index}
       >
         <NodeOutlet node={node} context={renderContext} indexKey={`${rootKey}-${index}`} />

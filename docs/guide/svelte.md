@@ -96,10 +96,7 @@ Example `ThinkingNode.svelte`:
 <section class="thinking-node">
   <MarkdownRender
     content={node.content}
-    customId={context?.customId}
-    isDark={context?.isDark}
-    codeBlockProps={context?.codeBlockProps}
-    customHtmlTags={['thinking']}
+    {context}
   />
 </section>
 ```

@@ -3,7 +3,7 @@ import type { RuntimeCustomComponentMap } from '../../customComponents'
 import type {
   NodeRendererCodeBlockProps,
   NodeRendererEvents,
-  NodeRendererProps,
+  NodeRendererOptions,
   SvelteRenderContext,
 } from '../../types/renderer'
 import { normalizeCustomHtmlTags } from 'stream-markdown-parser'
@@ -24,48 +24,54 @@ export const BLOCK_LEVEL_TYPES: ReadonlySet<string> = new Set([
   'vmr_container',
 ])
 
-export function buildRenderContext<TCustomNode extends BaseNode = never>(
-  props: NodeRendererProps<TCustomNode>,
+export function buildRenderContext(
+  options: NodeRendererOptions,
   events: NodeRendererEvents = {},
   textStreamState?: Map<string, string>,
   customComponents?: RuntimeCustomComponentMap,
+  parentContext?: SvelteRenderContext,
 ): SvelteRenderContext {
   const customHtmlTags = normalizeCustomHtmlTags([
-    ...(props.customHtmlTags || []),
-    ...(props.parseOptions?.customHtmlTags || []),
+    ...(options.customHtmlTags || []),
+    ...(options.parseOptions?.customHtmlTags || []),
   ])
-  const codeBlockProps = resolveCodeBlockProps(props)
+  const codeBlockProps = resolveCodeBlockProps(options)
 
   return {
-    customId: props.customId,
-    isDark: props.isDark,
-    final: props.final,
-    typewriter: props.typewriter,
-    fade: props.fade,
-    textStreamState,
-    showTooltips: props.showTooltips,
-    renderCodeBlocksAsPre: props.renderCodeBlocksAsPre,
-    allowHtml: props.allowHtml !== false,
-    htmlPolicy: props.htmlPolicy ?? 'safe',
+    ...options,
+    allowHtml: options.allowHtml !== false,
+    batchRendering: options.batchRendering ?? true,
+    codeBlockStream: options.codeBlockStream ?? true,
     customHtmlTags,
-    parseOptions: props.parseOptions,
-    customMarkdownIt: props.customMarkdownIt,
+    debugPerformance: options.debugPerformance ?? false,
+    fade: options.fade ?? true,
+    htmlPolicy: options.htmlPolicy ?? 'safe',
+    initialRenderBatchSize: options.initialRenderBatchSize ?? 40,
+    isDark: options.isDark ?? false,
+    maxLiveNodes: options.maxLiveNodes ?? 320,
+    renderBatchBudgetMs: options.renderBatchBudgetMs ?? 6,
+    renderBatchDelay: options.renderBatchDelay ?? 16,
+    renderBatchIdleTimeoutMs: options.renderBatchIdleTimeoutMs ?? 120,
+    renderBatchSize: options.renderBatchSize ?? 80,
+    renderCodeBlocksAsPre: options.renderCodeBlocksAsPre ?? false,
+    showTooltips: options.showTooltips ?? true,
+    smoothStreaming: options.smoothStreaming ?? 'auto',
+    typewriter: options.typewriter ?? false,
     codeBlockProps,
-    mermaidProps: props.mermaidProps,
-    d2Props: props.d2Props,
-    infographicProps: props.infographicProps,
-    imageProps: props.imageProps,
-    mathProps: props.mathProps,
+    textStreamState,
     customComponents,
-    batchRendering: props.batchRendering,
-    smoothStreaming: props.smoothStreaming,
-    smoothStreamingOptions: props.smoothStreamingOptions,
-    events,
+    events: {
+      ...parentContext?.events,
+      ...(events.onCopy === undefined ? {} : { onCopy: events.onCopy }),
+      ...(events.onHandleArtifactClick === undefined
+        ? {}
+        : { onHandleArtifactClick: events.onHandleArtifactClick }),
+    },
   }
 }
 
-function resolveCodeBlockProps<TCustomNode extends BaseNode>(
-  props: NodeRendererProps<TCustomNode>,
+function resolveCodeBlockProps(
+  props: NodeRendererOptions,
 ): NodeRendererCodeBlockProps {
   const configured = props.codeBlockProps
   const monacoOptions = props.codeBlockMonacoOptions || configured?.monacoOptions
@@ -82,7 +88,7 @@ function resolveCodeBlockProps<TCustomNode extends BaseNode>(
     maxWidth: configured?.maxWidth ?? props.codeBlockMaxWidth,
     minWidth: configured?.minWidth ?? props.codeBlockMinWidth,
     monacoOptions,
-    stream: configured?.stream ?? props.codeBlockStream,
+    stream: configured?.stream ?? props.codeBlockStream ?? true,
     themes: configured?.themes ?? props.themes,
   }
 }

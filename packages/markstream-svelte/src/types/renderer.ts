@@ -126,9 +126,10 @@ export interface NodeRendererEvents {
   onHandleArtifactClick?: ((payload: CodeBlockPreviewPayload) => void) | undefined
 }
 
-export interface NodeRendererProps<TCustomNode extends BaseNode = never> {
-  content?: string | undefined
-  nodes?: readonly RenderableMarkdownNode<TCustomNode>[] | null | undefined
+/**
+ * Renderer configuration inherited by nested `NodeRenderer` instances.
+ */
+export interface NodeRendererOptions {
   final?: boolean | undefined
   parseOptions?: ParseOptions | undefined
   customMarkdownIt?: ((md: MarkdownIt) => MarkdownIt) | undefined
@@ -148,12 +149,10 @@ export interface NodeRendererProps<TCustomNode extends BaseNode = never> {
   infographicProps?: NodeRendererInfographicProps | undefined
   imageProps?: NodeRendererImageProps | undefined
   mathProps?: NodeRendererMathProps | undefined
-  customComponents?: RendererCustomComponentMap<TCustomNode> | undefined
   showTooltips?: boolean | undefined
   themes?: CodeBlockMonacoTheme[] | undefined
   isDark?: boolean | undefined
   customId?: string | undefined
-  indexKey?: number | string | undefined
   typewriter?: boolean | undefined
   fade?: boolean | undefined
   batchRendering?: boolean | undefined
@@ -166,6 +165,15 @@ export interface NodeRendererProps<TCustomNode extends BaseNode = never> {
   allowHtml?: boolean | undefined
   smoothStreaming?: boolean | 'auto' | undefined
   smoothStreamingOptions?: SmoothMarkdownStreamOptions | undefined
+}
+
+export interface NodeRendererProps<TCustomNode extends BaseNode = never>
+  extends NodeRendererOptions {
+  content?: string | undefined
+  nodes?: readonly RenderableMarkdownNode<TCustomNode>[] | null | undefined
+  context?: SvelteRenderContext | undefined
+  customComponents?: RendererCustomComponentMap<TCustomNode> | undefined
+  indexKey?: number | string | undefined
 }
 
 export type NodeRendererInput<TCustomNode extends BaseNode = never>
@@ -181,29 +189,8 @@ export type NodeRendererInput<TCustomNode extends BaseNode = never>
       }
     )
 
-export interface SvelteRenderContext {
-  customId?: string | undefined
-  isDark?: boolean | undefined
-  final?: boolean | undefined
-  typewriter?: boolean | undefined
-  fade?: boolean | undefined
+export interface SvelteRenderContext extends NodeRendererOptions {
   textStreamState?: Map<string, string> | undefined
-  showTooltips?: boolean | undefined
-  renderCodeBlocksAsPre?: boolean | undefined
-  allowHtml?: boolean | undefined
-  htmlPolicy?: HtmlPolicy | undefined
-  customHtmlTags?: readonly string[] | undefined
-  parseOptions?: ParseOptions | undefined
-  customMarkdownIt?: ((md: MarkdownIt) => MarkdownIt) | undefined
-  codeBlockProps?: NodeRendererCodeBlockProps | undefined
-  mermaidProps?: NodeRendererMermaidProps | undefined
-  d2Props?: NodeRendererD2Props | undefined
-  infographicProps?: NodeRendererInfographicProps | undefined
-  imageProps?: NodeRendererImageProps | undefined
-  mathProps?: NodeRendererMathProps | undefined
   customComponents?: RuntimeCustomComponentMap | undefined
-  batchRendering?: boolean | undefined
-  smoothStreaming?: boolean | 'auto' | undefined
-  smoothStreamingOptions?: SmoothMarkdownStreamOptions | undefined
   events: NodeRendererEvents
 }

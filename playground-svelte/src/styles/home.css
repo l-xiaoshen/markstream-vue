@@ -48,7 +48,7 @@
   padding: 12px;
   border: 1px solid hsl(var(--ms-border) / 0.42);
   border-radius: 14px;
-  background: transparent;
+  background: hsl(var(--ms-muted) / 0.32);
 }
 
 .chat-overview__stat-label {
@@ -70,15 +70,19 @@
   flex: 1;
   display: flex;
   flex-direction: column-reverse;
-  overflow-y: visible;
+  overflow-y: auto;
   overflow-anchor: none;
   scroll-behavior: smooth;
   overscroll-behavior: contain;
 }
 
 .chat-messages > .markdown-renderer {
-  min-height: 0;
+  min-height: 100%;
   box-sizing: border-box;
+}
+
+.chat-messages.disable-min-height > .markdown-renderer {
+  min-height: unset !important;
 }
 
 .chat-messages__content {

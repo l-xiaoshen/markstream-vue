@@ -1,10 +1,10 @@
 .chat-wrapper {
   position: relative;
   z-index: 1;
-  min-height: 100vh;
+  height: 100vh;
   padding: 20px;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
   transition: padding-right 0.3s ease;
 }
@@ -17,14 +17,18 @@
   position: relative;
   width: 100%;
   max-width: 960px;
-  min-height: calc(100vh - 40px);
+  height: calc(100vh - 40px);
   display: flex;
   flex-direction: column;
-  overflow: visible;
+  overflow: hidden;
   border: 1px solid var(--play-border);
   border-radius: 24px;
-  background: none;
-  box-shadow: none;
+  background: linear-gradient(180deg, hsl(var(--ms-background) / 0.88), hsl(var(--ms-background) / 0.78));
+  backdrop-filter: blur(16px) saturate(1.4);
+  box-shadow:
+    0 0 0 1px hsl(var(--ms-border) / 0.1),
+    0 28px 84px hsl(var(--ms-foreground) / 0.1),
+    0 8px 24px hsl(var(--ms-foreground) / 0.04);
 }
 
 .chat-container::before {

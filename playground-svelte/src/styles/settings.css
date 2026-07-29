@@ -8,7 +8,7 @@
   gap: 16px;
   overflow-y: auto;
   border: 1px solid hsl(var(--ms-border) / 0.4);
-  background: transparent;
+  background: hsl(var(--ms-background) / 0.92);
   backdrop-filter: blur(20px) saturate(1.6);
   scrollbar-width: thin;
 }

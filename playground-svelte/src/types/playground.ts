@@ -6,5 +6,4 @@ export interface PlaygroundNodeSchema {
   thinking: ThinkingNodeData
 }
 
-export type PlaygroundPath = '/' | '/test'
 export type RenderMode = 'monaco' | 'markdown' | 'pre'

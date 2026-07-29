@@ -1,7 +1,6 @@
 import type {
   CodeBlockMonacoOptions,
   CodeBlockMonacoTheme,
-  SmoothMarkdownStreamOptions,
 } from 'markstream-svelte'
 
 export const PLAYGROUND_CUSTOM_ID = 'playground-demo'
@@ -53,15 +52,4 @@ export const PLAYGROUND_MONACO_OPTIONS: CodeBlockMonacoOptions = {
   diffAlgorithm: 'legacy',
   diffHideUnchangedRegions,
   hideUnchangedRegions: diffHideUnchangedRegions,
-}
-
-export const PLAYGROUND_SMOOTH_STREAMING_OPTIONS: SmoothMarkdownStreamOptions = {
-  catchUpLatencyMs: 120,
-  catchUpThreshold: 240,
-  maxCharsPerCommit: 240,
-  maxCharsPerSecond: 12000,
-  maxCommitFps: 60,
-  minCharsPerSecond: 4000,
-  startDelayMs: 0,
-  targetLatencyMs: 240,
 }

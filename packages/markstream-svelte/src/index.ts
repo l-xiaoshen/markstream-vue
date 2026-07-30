@@ -1,5 +1,6 @@
 import './index.css'
 
+export * from './compatibility'
 export { default } from './components/NodeRenderer.svelte'
 export { default as MarkdownRender } from './components/NodeRenderer.svelte'
 export { default as NodeRenderer } from './components/NodeRenderer.svelte'
@@ -8,8 +9,11 @@ export {
   clearGlobalCustomComponents,
   createCustomComponentRegistry,
   defineCustomComponents,
+  getCustomComponentsRevision,
+  getCustomNodeComponents,
   removeCustomComponents,
   setCustomComponents,
+  subscribeCustomComponents,
 } from './customComponents'
 export type {
   CustomComponentMap,
@@ -46,6 +50,7 @@ export type {
   D2Instance,
   D2Loader,
   D2Runtime,
+  D2RuntimeLoader,
 } from './optional/d2'
 export {
   createInfographicRuntime,
@@ -65,6 +70,7 @@ export type {
   KatexLoader,
   KatexModule,
   KatexRuntime,
+  KatexRuntimeLoader,
 } from './optional/katex'
 export {
   createMermaidRuntime,
@@ -76,6 +82,7 @@ export type {
   MermaidModule,
   MermaidRenderResult,
   MermaidRuntime,
+  MermaidRuntimeLoader,
 } from './optional/mermaid'
 export {
   createMonacoRuntime,

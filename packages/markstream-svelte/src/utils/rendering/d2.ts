@@ -1,5 +1,5 @@
 import type { RenderOptions } from '@terrastruct/d2'
-import { d2Runtime } from '../../optional/d2'
+import { getCompatibleD2 } from '../../optional/legacyState'
 import { toSafeSvgMarkup } from '../../sanitizeSvg'
 
 export type D2ThemeId = RenderOptions['themeID']
@@ -75,7 +75,7 @@ export async function renderD2Svg<TDiagram = unknown>(
     return renderD2SvgWithRenderer(request, renderer)
   }
 
-  const D2Renderer = await d2Runtime.get()
+  const D2Renderer = await getCompatibleD2()
   if (!D2Renderer)
     throw new Error('D2 renderer is not available.')
   return renderD2SvgWithRenderer(request, new D2Renderer())

@@ -231,36 +231,47 @@ const tooltip = createTooltipService()
 
 Optional peer loaders use each package's declared runtime value, so custom
 loaders are checked against the dependency's own TypeScript declarations.
-Workers use typed ES-module request/response protocols; classic `importScripts`
-workers and global UMD discovery are not supported.
+Workers use typed ES-module request/response protocols, so classic
+`importScripts` workers are not supported. The deprecated `getKatex()` and
+`getMermaid()` helpers retain global UMD discovery for existing CDN setups;
+new integrations should configure the strict runtime singletons instead.
 
 ## Migration notes
 
-- Custom component `node` is required and typed. The deprecated `ctx` alias was
-  removed; use `context`.
+- Custom component `node` is required and typed. Use `context`; the former
+  `ctx`, `customId`, `isDark`, `typewriter`, and `fade` fields remain as
+  deprecated compatibility aliases.
 - Prefer `defineCustomComponents<NodeSchema>()` before registration.
 - Use `RendererCustomComponentMap<TCustomNode>` for renderer-local overrides;
   the erased runtime registry map is internal.
 - Use `RenderableMarkdownNode<TCustomNode>` instead of catch-all parser node
   types when your app owns custom nodes.
-- Import built-in node renderers from `markstream-svelte/nodes`. Deprecated
-  root aliases such as `SvelteCodeBlockNode` and `MarkdownCodeBlockNode` were
-  removed.
-- Import advanced worker APIs from `markstream-svelte/workers`; only common
-  worker setup remains on the root entry.
+- Use `CodeBlockNode` for code-block overrides. The former
+  `SvelteCodeBlockNode` and `MarkdownCodeBlockNode` names remain as deprecated
+  root aliases.
+- Worker setup and advanced worker helpers remain available from the root
+  entry. Import bundled worker scripts from their dedicated `workers/*` paths.
 - Reactive helpers now use Svelte rune classes. Instantiate
   `SmoothMarkdownStream` with `new` instead of calling
   `useSmoothMarkdownStream`, and call `destroy()` when its owner is disposed.
 - `getSafeI18n()` replaces the former hook-shaped `useSafeI18n()` helper.
-- Node renderers and custom components now receive only their standard
-  `node`/`context`/`indexKey` props. Renderer settings are read from `context`.
+- Node renderers and custom components use the standard
+  `node`/`context`/`indexKey` props. Renderer settings are read from `context`;
+  former top-level custom-component option bags and rich-node props are still
+  supplied or accepted as deprecated compatibility adapters.
 - `batchRendering` retains its batch budget and idle timeout controls, and
   `maxLiveNodes <= 0` remains a supported `smoothStreaming="auto"` signal.
-  Inert viewport/windowing props were removed.
+  The formerly accepted viewport/windowing props remain deprecated no-ops.
 - Svelte 5.33.1 is now the minimum because state models declare lazy derived
   fields in class constructors.
 - Optional renderer overrides use the exported runtime singletons' `setLoader()`
-  methods, or isolated instances from `create*Runtime()`.
+  methods, or isolated instances from `create*Runtime()`. Former function-style
+  controls remain deprecated compatibility adapters; their broad loader values
+  are kept separate from the strictly typed singleton state.
+- `D2Loader`, `KatexLoader`, and `MermaidLoader` retain their broad legacy
+  module-loader contracts and are deprecated. Use the strict
+  `D2RuntimeLoader`, `KatexRuntimeLoader`, and `MermaidRuntimeLoader` types with
+  the runtime singletons.
 
 Run the local playground with:
 

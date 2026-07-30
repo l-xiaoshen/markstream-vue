@@ -9,12 +9,22 @@ import type {
   RuntimeCustomComponentMap,
 } from '../../customComponents'
 import type { CustomMarkdownNode } from '../../types/nodes'
-import type { SvelteRenderContext } from '../../types/renderer'
+import type {
+  NodeRendererInfographicProps,
+  NodeRendererMermaidProps,
+  SvelteRenderContext,
+} from '../../types/renderer'
 import {
   getHtmlTagFromContent,
   stripCustomHtmlWrapper,
 } from 'stream-markdown-parser'
 import { isNodeType } from '../../types/nodes'
+import {
+  clampPreviewHeight,
+  estimateInfographicPreviewHeight,
+  estimateMermaidPreviewHeight,
+  parsePositiveNumber,
+} from '../../utils/diagramLayout'
 import { normalizeLanguageIdentifier } from '../../utils/language'
 
 export type CodeBlockMode = 'mermaid' | 'd2' | 'infographic' | 'pre' | 'code'
@@ -81,6 +91,48 @@ export function coerceBuiltinHtmlNode(
     ...node,
     tag,
   }
+}
+
+export function resolveNodeOutletCustomInputs(
+  node: BaseNode,
+  context?: SvelteRenderContext,
+): Record<string, unknown> | null {
+  if (!isNodeType(node, 'code_block'))
+    return null
+
+  const codeMode = resolveNodeOutletCodeMode(node, context)
+  if (codeMode === 'mermaid') {
+    return withEstimatedPreviewHeight(
+      context?.mermaidProps,
+      estimateMermaidPreviewHeight(node.code),
+    )
+  }
+  if (codeMode === 'd2')
+    return context?.d2Props ?? null
+  if (codeMode === 'infographic') {
+    return withEstimatedPreviewHeight(
+      context?.infographicProps,
+      estimateInfographicPreviewHeight(node.code),
+    )
+  }
+  return context?.codeBlockProps ?? null
+}
+
+function withEstimatedPreviewHeight(
+  props: NodeRendererMermaidProps | NodeRendererInfographicProps | undefined,
+  estimatedHeight: number,
+): Record<string, unknown> {
+  const next = { ...(props ?? {}) }
+  if (parsePositiveNumber(next.estimatedPreviewHeightPx) == null) {
+    next.estimatedPreviewHeightPx = clampPreviewHeight(
+      estimatedHeight,
+      undefined,
+      next.maxHeight === 'none'
+        ? null
+        : (parsePositiveNumber(next.maxHeight) ?? undefined),
+    )
+  }
+  return next
 }
 
 export function resolveNodeOutletCustomComponent(

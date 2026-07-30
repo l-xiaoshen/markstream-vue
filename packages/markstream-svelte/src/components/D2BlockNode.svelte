@@ -1,23 +1,44 @@
 <script lang="ts">
   import type { CodeBlockNode as ParserCodeBlockNode } from 'stream-markdown-parser'
   import type { NodeProps } from '../types/componentProps'
+  import type { NodeRendererD2Props } from '../types/renderer'
   import { getSafeI18n } from '../i18n/safeI18n'
   import { D2BlockState } from '../state/blocks/D2BlockState.svelte'
   import RichBlockActionButton from './shared/RichBlockActionButton.svelte'
   import RichBlockFullscreenModal from './shared/RichBlockFullscreenModal.svelte'
   import RichBlockModeToggle from './shared/RichBlockModeToggle.svelte'
   import RichBlockZoomControls from './shared/RichBlockZoomControls.svelte'
+  import { mergeLegacyNodeOptions } from './shared/node-helpers'
+
+  /** @deprecated Pass these settings through `context.d2Props`. */
+  interface LegacyD2NodeProps extends NodeRendererD2Props {
+    isDark?: boolean | undefined
+    loading?: boolean | undefined
+  }
+
+  interface Props extends NodeProps<ParserCodeBlockNode>, LegacyD2NodeProps {}
 
   let {
     node,
     context = undefined,
-  }: NodeProps<ParserCodeBlockNode> = $props()
+    indexKey: _indexKey = undefined,
+    isDark = undefined,
+    loading = undefined,
+    ...directOptions
+  }: Props = $props()
 
   const { t } = getSafeI18n()
-  const options = $derived(context?.d2Props)
+  const resolvedNode = $derived(
+    loading === undefined ? node : { ...node, loading },
+  )
+  const resolvedContext = $derived(mergeLegacyNodeOptions(context, {
+    d2Props: directOptions,
+    isDark,
+  }))
+  const options = $derived(resolvedContext.d2Props)
   const block = new D2BlockState(() => ({
-    context,
-    node,
+    context: resolvedContext,
+    node: resolvedNode,
   }))
 
   function showCopyTooltip(event: MouseEvent | FocusEvent): void {

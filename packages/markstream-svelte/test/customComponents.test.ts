@@ -1,11 +1,42 @@
 import type { Component } from 'svelte'
 import { describe, expect, it, vi } from 'vitest'
-import { createCustomComponentRegistry } from '../src/customComponents'
+import {
+  createCustomComponentProps,
+  createCustomComponentRegistry,
+} from '../src/customComponents'
 
 const GlobalProbe: Component = () => ({})
 const ScopedProbe: Component = () => ({})
 
 describe('custom component registry', () => {
+  it('supplies canonical props and deprecated context aliases', () => {
+    const context = {
+      customId: 'conversation',
+      events: {},
+      fade: false,
+      isDark: true,
+      typewriter: false,
+    }
+    const node = {
+      content: 'work',
+      raw: '<thinking>work</thinking>',
+      type: 'thinking',
+    }
+
+    const props = createCustomComponentProps(node, context, 'thinking-0')
+
+    expect(props).toEqual({
+      node,
+      context,
+      indexKey: 'thinking-0',
+      ctx: context,
+      customId: 'conversation',
+      fade: false,
+      isDark: true,
+      typewriter: false,
+    })
+  })
+
   it('isolates state between registry instances', () => {
     const first = createCustomComponentRegistry()
     const second = createCustomComponentRegistry()

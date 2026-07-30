@@ -2,7 +2,10 @@ import type { RenderOptions } from '@terrastruct/d2'
 import type { CodeBlockNode } from 'stream-markdown-parser'
 import type { MermaidModule } from '../src/optional/mermaid'
 import { describe, expect, it, vi } from 'vitest'
-import { resolveNodeOutletCodeMode } from '../src/components/shared/node-outlet-helpers'
+import {
+  resolveNodeOutletCodeMode,
+  resolveNodeOutletCustomInputs,
+} from '../src/components/shared/node-outlet-helpers'
 import { renderD2Svg } from '../src/utils/rendering/d2'
 import { renderKatexMarkup } from '../src/utils/rendering/katex'
 import { resolveMermaidRenderSource } from '../src/utils/rendering/mermaid'
@@ -24,6 +27,31 @@ describe('rich block rendering pipelines', () => {
     expect(resolveNodeOutletCodeMode(codeNode('mermaid'), context)).toBe('mermaid')
     expect(resolveNodeOutletCodeMode(codeNode('d2'), context)).toBe('d2')
     expect(resolveNodeOutletCodeMode(codeNode('infographic'), context)).toBe('infographic')
+  })
+
+  it('forwards legacy rich options to custom code renderers', () => {
+    const node: CodeBlockNode = {
+      type: 'code_block',
+      code: 'graph TD\nA --> B',
+      language: 'mermaid',
+      raw: 'graph TD\nA --> B',
+    }
+
+    const inputs = resolveNodeOutletCustomInputs(node, {
+      events: {},
+      mermaidProps: {
+        legacyOption: 'kept',
+        maxHeight: '480px',
+        showHeader: false,
+      },
+    })
+
+    expect(inputs).toMatchObject({
+      legacyOption: 'kept',
+      maxHeight: '480px',
+      showHeader: false,
+    })
+    expect(inputs?.estimatedPreviewHeightPx).toBeTypeOf('number')
   })
 
   it('runs D2 compile and render through the shared pipeline', async () => {

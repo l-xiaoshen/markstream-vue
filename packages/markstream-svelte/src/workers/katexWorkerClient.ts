@@ -9,7 +9,7 @@ import type {
   KaTeXBackpressureDefaults,
   KaTeXWorkerClientOptions,
 } from './katexWorkerTypes'
-import { katexRuntime } from '../optional/katex'
+import { isCompatibleKatexEnabled } from '../optional/legacyState'
 import {
   AbortRuntimeError,
   FeatureDisabledError,
@@ -42,7 +42,7 @@ export function createKaTeXWorkerClient(
   options: KaTeXWorkerClientOptions = {},
 ): KaTeXWorkerClient {
   const cacheMax = options.cacheMax ?? 200
-  const checkEnabled = options.isEnabled ?? katexRuntime.isEnabled
+  const checkEnabled = options.isEnabled ?? isCompatibleKatexEnabled
   const state: {
     debug: boolean
     maxConcurrency: number

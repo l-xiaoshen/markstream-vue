@@ -1,20 +1,30 @@
 <script lang="ts">
   import type { ImageNode as ParserImageNode } from 'stream-markdown-parser'
   import type { NodeProps } from '../types/componentProps'
+  import type { NodeRendererImageProps } from '../types/renderer'
   import { sanitizeImageSrc } from 'stream-markdown-parser'
   import { getSafeI18n } from '../i18n/safeI18n'
+  import { mergeLegacyNodeOptions } from './shared/node-helpers'
 
   import { untrack } from 'svelte'
+
+  /** @deprecated Pass these settings through `context.imageProps`. */
+  interface Props extends NodeProps<ParserImageNode>, NodeRendererImageProps {}
 
   let {
     node,
     context = undefined,
-  }: NodeProps<ParserImageNode> = $props()
+    indexKey: _indexKey = undefined,
+    ...directOptions
+  }: Props = $props()
 
   const { t } = getSafeI18n()
-  const fallbackSrc = $derived(context?.imageProps?.fallbackSrc ?? '')
-  const lazy = $derived(context?.imageProps?.lazy ?? false)
-  const usePlaceholder = $derived(context?.imageProps?.usePlaceholder ?? true)
+  const resolvedContext = $derived(mergeLegacyNodeOptions(context, {
+    imageProps: directOptions,
+  }))
+  const fallbackSrc = $derived(resolvedContext.imageProps?.fallbackSrc ?? '')
+  const lazy = $derived(resolvedContext.imageProps?.lazy ?? false)
+  const usePlaceholder = $derived(resolvedContext.imageProps?.usePlaceholder ?? true)
 
   type ImageStage = 'primary' | 'fallback' | 'failed'
 

@@ -12,7 +12,7 @@
     hasCompleteHtmlTagContent,
     STANDARD_HTML_TAGS,
   } from 'stream-markdown-parser'
-  import { getCustomNodeComponents } from '../customComponents'
+  import { createCustomComponentProps, getCustomNodeComponents } from '../customComponents'
   import { isNodeType } from '../types/nodes'
   import AdmonitionNode from './AdmonitionNode.svelte'
   import BlockquoteNode from './BlockquoteNode.svelte'
@@ -54,6 +54,7 @@
     coerceCustomHtmlNode,
     resolveHtmlTag,
     resolveNodeOutletCustomComponent,
+    resolveNodeOutletCustomInputs,
   } from './shared/node-outlet-helpers'
 
   const EMPTY_RENDER_CONTEXT = { events: {} } satisfies SvelteRenderContext
@@ -72,10 +73,13 @@
   let customComponentMap = $derived(context.customComponents || getCustomNodeComponents(context.customId))
   let CustomComponent = $derived(resolveNodeOutletCustomComponent(node, context, customComponentMap))
   let customNode = $derived(coerceCustomHtmlNode(node))
-  let customComponentProps = $derived({
-    node: customNode,
-    ...standardProps,
-  } satisfies NodeProps<typeof customNode>)
+  let customInputs = $derived(resolveNodeOutletCustomInputs(node, context) ?? {})
+  let customComponentProps = $derived(createCustomComponentProps(
+    customNode,
+    context,
+    resolvedIndexKey,
+    customInputs,
+  ))
   let htmlTag = $derived(resolveHtmlTag(node))
   let shouldEscapeHtmlTag = $derived(resolveShouldEscapeHtmlTag())
 

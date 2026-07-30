@@ -24,12 +24,82 @@ export const BLOCK_LEVEL_TYPES: ReadonlySet<string> = new Set([
   'vmr_container',
 ])
 
+type LegacyNodeOptionOverrides = Pick<
+  NodeRendererOptions,
+  | 'codeBlockProps'
+  | 'd2Props'
+  | 'imageProps'
+  | 'infographicProps'
+  | 'isDark'
+  | 'mermaidProps'
+>
+
+function mergeDefinedOptions<T extends object>(
+  inherited: T | undefined,
+  direct: T,
+): T {
+  const merged = { ...(inherited ?? {}) } as T
+  for (const [key, value] of Object.entries(direct)) {
+    if (value !== undefined)
+      Object.assign(merged, { [key]: value })
+  }
+  return merged
+}
+
+function mergeLegacyCodeBlockOptions(
+  inherited: NodeRendererCodeBlockProps | undefined,
+  direct: NodeRendererCodeBlockProps,
+): NodeRendererCodeBlockProps {
+  const merged = mergeDefinedOptions(inherited, direct)
+  if (direct.monacoOptions !== undefined) {
+    merged.monacoOptions = {
+      ...(inherited?.monacoOptions ?? {}),
+      ...direct.monacoOptions,
+    }
+  }
+  if (direct.themes !== undefined) {
+    merged.themes = [
+      ...(inherited?.themes ?? []),
+      ...direct.themes,
+    ]
+  }
+  return merged
+}
+
+export function mergeLegacyNodeOptions(
+  context: SvelteRenderContext | undefined,
+  overrides: LegacyNodeOptionOverrides,
+): SvelteRenderContext {
+  const next: SvelteRenderContext = {
+    ...context,
+    events: context?.events ?? {},
+  }
+  if (overrides.isDark !== undefined)
+    next.isDark = overrides.isDark
+  if (overrides.codeBlockProps)
+    next.codeBlockProps = mergeLegacyCodeBlockOptions(context?.codeBlockProps, overrides.codeBlockProps)
+  if (overrides.mermaidProps)
+    next.mermaidProps = mergeDefinedOptions(context?.mermaidProps, overrides.mermaidProps)
+  if (overrides.d2Props)
+    next.d2Props = mergeDefinedOptions(context?.d2Props, overrides.d2Props)
+  if (overrides.infographicProps) {
+    next.infographicProps = mergeDefinedOptions(
+      context?.infographicProps,
+      overrides.infographicProps,
+    )
+  }
+  if (overrides.imageProps)
+    next.imageProps = mergeDefinedOptions(context?.imageProps, overrides.imageProps)
+  return next
+}
+
 export function buildRenderContext(
   options: NodeRendererOptions,
   events: NodeRendererEvents = {},
   textStreamState?: Map<string, string>,
   customComponents?: RuntimeCustomComponentMap,
   parentContext?: SvelteRenderContext,
+  legacyMetadata: Pick<SvelteRenderContext, 'indexKey' | 'streamRenderVersion'> = {},
 ): SvelteRenderContext {
   const customHtmlTags = normalizeCustomHtmlTags([
     ...(options.customHtmlTags || []),
@@ -58,6 +128,16 @@ export function buildRenderContext(
     smoothStreaming: options.smoothStreaming ?? 'auto',
     typewriter: options.typewriter ?? false,
     codeBlockProps,
+    codeBlockThemes: {
+      themes: codeBlockProps.themes,
+      darkTheme: codeBlockProps.darkTheme,
+      lightTheme: codeBlockProps.lightTheme,
+      monacoOptions: codeBlockProps.monacoOptions,
+      minWidth: codeBlockProps.minWidth,
+      maxWidth: codeBlockProps.maxWidth,
+    },
+    indexKey: legacyMetadata.indexKey ?? parentContext?.indexKey,
+    streamRenderVersion: legacyMetadata.streamRenderVersion,
     textStreamState,
     customComponents,
     events: {

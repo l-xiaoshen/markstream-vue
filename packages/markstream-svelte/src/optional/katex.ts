@@ -3,7 +3,9 @@ import type { OptionalPeerLoader, OptionalPeerRuntime } from '../runtime/optiona
 import { createOptionalPeerRuntime } from '../runtime/optionalPeer'
 
 export type KatexModule = typeof katex
-export type KatexLoader = OptionalPeerLoader<KatexModule>
+export type KatexRuntimeLoader = OptionalPeerLoader<KatexModule>
+/** @deprecated Use `KatexRuntimeLoader` with `katexRuntime` or `createKatexRuntime()`. */
+export type KatexLoader = () => unknown | Promise<unknown>
 export type KatexRuntime = OptionalPeerRuntime<KatexModule>
 
 async function defaultKatexLoader(): Promise<KatexModule> {
@@ -18,7 +20,7 @@ async function defaultKatexLoader(): Promise<KatexModule> {
 }
 
 export function createKatexRuntime(
-  loader: KatexLoader = defaultKatexLoader,
+  loader: KatexRuntimeLoader = defaultKatexLoader,
 ): KatexRuntime {
   return createOptionalPeerRuntime(loader)
 }

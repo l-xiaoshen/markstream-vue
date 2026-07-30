@@ -1,11 +1,11 @@
+import type { LegacyMermaidRenderResult } from '../../optional/legacyState'
 import type {
   MermaidInitConfig,
-  MermaidModule,
   MermaidRenderResult,
 } from '../../optional/mermaid'
 import type { MermaidTheme } from '../mermaidPreview'
 import { toSafeMermaidSvgMarkup } from 'stream-markdown-parser'
-import { mermaidRuntime } from '../../optional/mermaid'
+import { getMermaid } from '../../optional/legacy'
 import {
   canParseOffthread,
   findPrefixOffthread,
@@ -18,6 +18,14 @@ import {
 
 export type MermaidBindFunctions
   = NonNullable<Exclude<MermaidRenderResult, string>['bindFunctions']>
+
+interface MermaidRendererApi {
+  parse?: ((source: string) => Promise<unknown> | unknown) | undefined
+  render: (
+    id: string,
+    source: string,
+  ) => Promise<LegacyMermaidRenderResult> | LegacyMermaidRenderResult
+}
 
 export interface MermaidRenderRequest {
   allowPrefix: boolean
@@ -43,7 +51,7 @@ export interface MermaidRenderDependencies {
     theme: MermaidTheme,
     timeoutMs: number,
   ) => Promise<string | null>
-  getRenderer?: (config: MermaidInitConfig) => Promise<MermaidModule | null>
+  getRenderer?: (config: MermaidInitConfig) => Promise<MermaidRendererApi | null>
   rethrowError?: (error: unknown) => boolean
 }
 
@@ -59,10 +67,7 @@ export type MermaidRenderPipelineResult
 
 interface MermaidParseRequest {
   dependencies: MermaidRenderDependencies
-  mermaid: {
-    parse?: MermaidModule['parse']
-    render: MermaidModule['render']
-  }
+  mermaid: MermaidRendererApi
   parseTimeoutMs: number
   source: string
   theme: MermaidTheme
@@ -228,7 +233,7 @@ export async function renderMermaidSvg(
   request: MermaidRenderRequest,
   dependencies: MermaidRenderDependencies = {},
 ): Promise<MermaidRenderPipelineResult> {
-  const mermaid = await (dependencies.getRenderer ?? mermaidRuntime.get)({
+  const mermaid = await (dependencies.getRenderer ?? getMermaid)({
     startOnLoad: false,
     securityLevel: request.isStrict ? 'strict' : 'loose',
     suppressErrorRendering: true,

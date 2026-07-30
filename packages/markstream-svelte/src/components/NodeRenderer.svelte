@@ -44,7 +44,10 @@
       return {}
     const {
       customComponents: _customComponents,
+      codeBlockThemes: _codeBlockThemes,
       events: _events,
+      indexKey: _indexKey,
+      streamRenderVersion: _streamRenderVersion,
       textStreamState: _textStreamState,
       ...options
     } = context
@@ -129,6 +132,10 @@
     textStreamState,
     mergedComponents,
     context,
+    {
+      indexKey: indexKey == null ? context?.indexKey : String(indexKey),
+      streamRenderVersion,
+    },
   ))
 
   const renderBatch = new RenderBatch(

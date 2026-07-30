@@ -8,7 +8,7 @@ import type {
   WorkerLoad,
 } from '../types/runtimeWorkers'
 import type { MermaidWorkerResult } from './internal/mermaidPendingRequests'
-import { mermaidRuntime } from '../optional/mermaid'
+import { isCompatibleMermaidEnabled } from '../optional/legacyState'
 import {
   FeatureDisabledError,
   WorkerBusyError,
@@ -36,7 +36,7 @@ export interface MermaidWorkerClient {
 export function createMermaidWorkerClient(
   options: MermaidWorkerClientOptions = {},
 ): MermaidWorkerClient {
-  const checkEnabled = options.isEnabled ?? mermaidRuntime.isEnabled
+  const checkEnabled = options.isEnabled ?? isCompatibleMermaidEnabled
   const state: {
     debug: boolean
     maxConcurrency: number

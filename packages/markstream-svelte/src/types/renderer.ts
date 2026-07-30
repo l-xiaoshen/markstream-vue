@@ -7,9 +7,9 @@ import type {
 } from 'stream-markdown-parser'
 import type { Component } from 'svelte'
 import type {
-  MarkstreamCustomComponentProps,
   MarkstreamSvelteComponent,
   RuntimeCustomComponentMap,
+  SuppliedCustomComponentProps,
 } from '../customComponents'
 import type {
   CodeBlockMonacoOptions,
@@ -21,7 +21,7 @@ type ComponentMapForNodeUnion<
   TNode extends BaseNode,
 > = {
   [TType in TNode['type']]?: MarkstreamSvelteComponent<
-    MarkstreamCustomComponentProps<Extract<TNode, { type: TType }>>
+    SuppliedCustomComponentProps<Extract<TNode, { type: TType }>>
   >
 }
 
@@ -43,7 +43,7 @@ export interface CodeBlockPreviewPayload {
   id: string
 }
 
-export interface NodeRendererCodeBlockProps {
+export interface NodeRendererCodeBlockProps extends Record<string, unknown> {
   stream?: boolean | undefined
   darkTheme?: CodeBlockMonacoTheme | undefined
   lightTheme?: CodeBlockMonacoTheme | undefined
@@ -69,7 +69,7 @@ export interface NodeRendererImageProps {
   usePlaceholder?: boolean | undefined
 }
 
-export interface NodeRendererMermaidProps {
+export interface NodeRendererMermaidProps extends Record<string, unknown> {
   maxHeight?: string | null | undefined
   estimatedPreviewHeightPx?: number | undefined
   workerTimeoutMs?: number | undefined
@@ -88,7 +88,7 @@ export interface NodeRendererMermaidProps {
   enableMermaidInteractions?: boolean | undefined
 }
 
-export interface NodeRendererD2Props {
+export interface NodeRendererD2Props extends Record<string, unknown> {
   maxHeight?: string | null | undefined
   themeId?: number | null | undefined
   darkThemeId?: number | null | undefined
@@ -102,7 +102,7 @@ export interface NodeRendererD2Props {
   showZoomControls?: boolean | undefined
 }
 
-export interface NodeRendererInfographicProps {
+export interface NodeRendererInfographicProps extends Record<string, unknown> {
   maxHeight?: string | null | undefined
   estimatedPreviewHeightPx?: number | undefined
   renderDebounceMs?: number | undefined
@@ -136,12 +136,18 @@ export interface NodeRendererOptions {
   debugPerformance?: boolean | undefined
   customHtmlTags?: readonly string[] | undefined
   htmlPolicy?: HtmlPolicy | undefined
+  /** @deprecated Use `codeBlockProps.stream` instead. */
   codeBlockStream?: boolean | undefined
+  /** @deprecated Use `codeBlockProps.darkTheme` instead. */
   codeBlockDarkTheme?: CodeBlockMonacoTheme | undefined
+  /** @deprecated Use `codeBlockProps.lightTheme` instead. */
   codeBlockLightTheme?: CodeBlockMonacoTheme | undefined
+  /** @deprecated Use `codeBlockProps.monacoOptions` instead. */
   codeBlockMonacoOptions?: CodeBlockMonacoOptions | undefined
   renderCodeBlocksAsPre?: boolean | undefined
+  /** @deprecated Use `codeBlockProps.minWidth` instead. */
   codeBlockMinWidth?: string | number | undefined
+  /** @deprecated Use `codeBlockProps.maxWidth` instead. */
   codeBlockMaxWidth?: string | number | undefined
   codeBlockProps?: NodeRendererCodeBlockProps | undefined
   mermaidProps?: NodeRendererMermaidProps | undefined
@@ -150,6 +156,7 @@ export interface NodeRendererOptions {
   imageProps?: NodeRendererImageProps | undefined
   mathProps?: NodeRendererMathProps | undefined
   showTooltips?: boolean | undefined
+  /** @deprecated Use `codeBlockProps.themes` instead. */
   themes?: CodeBlockMonacoTheme[] | undefined
   isDark?: boolean | undefined
   customId?: string | undefined
@@ -174,6 +181,12 @@ export interface NodeRendererProps<TCustomNode extends BaseNode = never>
   context?: SvelteRenderContext | undefined
   customComponents?: RendererCustomComponentMap<TCustomNode> | undefined
   indexKey?: number | string | undefined
+  /** @deprecated This prop had no effect in `markstream-svelte` and is retained only for source compatibility. */
+  viewportPriority?: boolean | undefined
+  /** @deprecated This prop had no effect in `markstream-svelte` and is retained only for source compatibility. */
+  deferNodesUntilVisible?: boolean | undefined
+  /** @deprecated This prop had no effect in `markstream-svelte` and is retained only for source compatibility. */
+  liveNodeBuffer?: number | undefined
 }
 
 export type NodeRendererInput<TCustomNode extends BaseNode = never>
@@ -190,6 +203,15 @@ export type NodeRendererInput<TCustomNode extends BaseNode = never>
     )
 
 export interface SvelteRenderContext extends NodeRendererOptions {
+  /** @deprecated Use the `indexKey` component prop instead. */
+  indexKey?: string | undefined
+  /** @deprecated Internal render revisions should not be consumed by custom components. */
+  streamRenderVersion?: number | undefined
+  /** @deprecated Use `codeBlockProps` instead. */
+  codeBlockThemes?: Pick<
+    NodeRendererCodeBlockProps,
+    'themes' | 'darkTheme' | 'lightTheme' | 'monacoOptions' | 'minWidth' | 'maxWidth'
+  > | undefined
   textStreamState?: Map<string, string> | undefined
   customComponents?: RuntimeCustomComponentMap | undefined
   events: NodeRendererEvents

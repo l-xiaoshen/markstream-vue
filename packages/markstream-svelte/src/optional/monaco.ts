@@ -12,6 +12,8 @@ export interface MonacoRuntime {
   preload: () => Promise<boolean>
 }
 
+const runtimeReadyResetters = new WeakMap<MonacoRuntime, () => void>()
+
 function defaultMonacoLoader(): Promise<MonacoRuntimeModule> {
   return import('stream-monaco')
 }
@@ -83,11 +85,19 @@ export function createMonacoRuntime(
     }
   }
 
-  return {
+  const runtime: MonacoRuntime = {
     get,
     isReady: () => state.ready,
     preload: async () => Boolean(await get()),
   }
+  runtimeReadyResetters.set(runtime, () => {
+    state.ready = false
+  })
+  return runtime
 }
 
 export const monacoRuntime = createMonacoRuntime()
+
+export function resetMonacoRuntimeReadyForTest(): void {
+  runtimeReadyResetters.get(monacoRuntime)?.()
+}

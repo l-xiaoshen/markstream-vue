@@ -34,8 +34,10 @@ pnpm add markstream-svelte svelte@^5
 
 <MarkdownRender
   {content}
-  codeBlockDarkTheme="vitesse-dark"
-  codeBlockLightTheme="vitesse-light"
+  codeBlockProps={{
+    darkTheme: 'vitesse-dark',
+    lightTheme: 'vitesse-light',
+  }}
 />
 ```
 

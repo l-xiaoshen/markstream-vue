@@ -1,22 +1,43 @@
 <script lang="ts">
   import type { CodeBlockNode as ParserCodeBlockNode } from 'stream-markdown-parser'
   import type { NodeProps } from '../types/componentProps'
+  import type { NodeRendererCodeBlockProps } from '../types/renderer'
   import { getSafeI18n } from '../i18n/safeI18n'
   import { CodeBlockState } from '../state/blocks/CodeBlockState.svelte'
   import { hideTooltip } from '../tooltip/singletonTooltip'
   import HtmlPreviewFrame from './HtmlPreviewFrame.svelte'
+  import { mergeLegacyNodeOptions } from './shared/node-helpers'
+
+  /** @deprecated Pass these settings through `context.codeBlockProps`. */
+  interface LegacyCodeBlockNodeProps extends NodeRendererCodeBlockProps {
+    isDark?: boolean | undefined
+    loading?: boolean | undefined
+  }
+
+  interface Props extends NodeProps<ParserCodeBlockNode>, LegacyCodeBlockNodeProps {}
 
   let {
     node,
     context = undefined,
-  }: NodeProps<ParserCodeBlockNode> = $props()
+    indexKey: _indexKey = undefined,
+    isDark = undefined,
+    loading = undefined,
+    ...directOptions
+  }: Props = $props()
 
   const { t } = getSafeI18n()
-  const options = $derived(context?.codeBlockProps)
+  const resolvedNode = $derived(
+    loading === undefined ? node : { ...node, loading },
+  )
+  const resolvedContext = $derived(mergeLegacyNodeOptions(context, {
+    codeBlockProps: directOptions,
+    isDark,
+  }))
+  const options = $derived(resolvedContext.codeBlockProps)
   const block = new CodeBlockState(() => ({
-    context,
+    context: resolvedContext,
     htmlPreviewTitle: t('artifacts.htmlPreviewTitle'),
-    node,
+    node: resolvedNode,
     svgPreviewTitle: t('artifacts.svgPreviewTitle'),
   }))
   let LanguageIcon = $derived(block.languageIcon)

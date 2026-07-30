@@ -4,6 +4,7 @@ export interface OptionalPeerRuntime<Value> {
   disable: () => void
   enable: (loader?: OptionalPeerLoader<Value>) => void
   get: () => Promise<Value | null>
+  getGeneration?: (() => number) | undefined
   isEnabled: () => boolean
   setLoader: (loader: OptionalPeerLoader<Value> | null) => void
 }
@@ -80,6 +81,7 @@ export function createOptionalPeerRuntime<Value>(
     disable: () => setLoader(null),
     enable: loader => setLoader(loader ?? defaultLoader),
     get,
+    getGeneration: () => state.generation,
     isEnabled: () => state.loader !== null,
     setLoader,
   }

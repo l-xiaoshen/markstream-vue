@@ -1,10 +1,65 @@
 import type { BaseNode } from 'stream-markdown-parser'
 import type { Component } from 'svelte'
 import type { NodeProps } from './types/componentProps'
+import type {
+  NodeRendererCodeBlockProps,
+  NodeRendererD2Props,
+  NodeRendererInfographicProps,
+  NodeRendererMermaidProps,
+  SvelteRenderContext,
+} from './types/renderer'
+
+interface DeprecatedCustomComponentAliases {
+  /** @deprecated Use `context` instead. */
+  ctx?: SvelteRenderContext
+  /** @deprecated Use `context?.customId` instead. */
+  customId?: string
+  /** @deprecated Use `context?.isDark` instead. */
+  isDark?: boolean
+  /** @deprecated Use `context?.typewriter` instead. */
+  typewriter?: boolean
+  /** @deprecated Use `context?.fade` instead. */
+  fade?: boolean
+}
 
 export type MarkstreamCustomComponentProps<
   TNode extends BaseNode = BaseNode,
 > = NodeProps<TNode>
+  & DeprecatedCustomComponentAliases
+  & NodeRendererCodeBlockProps
+  & NodeRendererMermaidProps
+  & NodeRendererD2Props
+  & NodeRendererInfographicProps
+
+export type SuppliedCustomComponentProps<
+  TNode extends BaseNode = BaseNode,
+> = MarkstreamCustomComponentProps<TNode> & {
+  context: SvelteRenderContext
+  ctx: SvelteRenderContext
+  fade: boolean
+  indexKey: string | number
+  isDark: boolean
+  typewriter: boolean
+}
+
+export function createCustomComponentProps<TNode extends BaseNode>(
+  node: TNode,
+  context: SvelteRenderContext,
+  indexKey?: string | number,
+  legacyOptions: Record<string, unknown> = {},
+): SuppliedCustomComponentProps<TNode> {
+  return {
+    node,
+    context,
+    indexKey: indexKey ?? 'node',
+    ctx: context,
+    isDark: context.isDark ?? false,
+    typewriter: context.typewriter ?? false,
+    fade: context.fade ?? true,
+    ...(context.customId === undefined ? {} : { customId: context.customId }),
+    ...legacyOptions,
+  } as SuppliedCustomComponentProps<TNode>
+}
 
 export type MarkstreamSvelteComponent<
   TProps extends object = MarkstreamCustomComponentProps,
@@ -16,7 +71,8 @@ type NodeSchema<TSchema> = {
 
 /**
  * A component map whose key determines the node contract. NodeOutlet supplies
- * only `MarkstreamCustomComponentProps`.
+ * `MarkstreamCustomComponentProps`. New components should read renderer state
+ * from `context`; deprecated top-level aliases remain for compatibility.
  *
  * @example
  * ```ts
@@ -28,7 +84,7 @@ export type CustomComponentMap<
   TNodeByName extends NodeSchema<TNodeByName> = Record<string, BaseNode>,
 > = {
   [TName in keyof TNodeByName]?: MarkstreamSvelteComponent<
-    MarkstreamCustomComponentProps<TNodeByName[TName]>
+    SuppliedCustomComponentProps<TNodeByName[TName]>
   >
 }
 

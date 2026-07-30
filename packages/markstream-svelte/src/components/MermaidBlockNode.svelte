@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { CodeBlockNode as ParserCodeBlockNode } from 'stream-markdown-parser'
   import type { NodeProps } from '../types/componentProps'
+  import type { NodeRendererMermaidProps } from '../types/renderer'
   import { getSafeI18n } from '../i18n/safeI18n'
   import { MermaidBlockState } from '../state/blocks/MermaidBlockState.svelte'
   import MermaidLanguageIcon from './shared/MermaidLanguageIcon.svelte'
@@ -8,17 +9,37 @@
   import RichBlockFullscreenModal from './shared/RichBlockFullscreenModal.svelte'
   import RichBlockModeToggle from './shared/RichBlockModeToggle.svelte'
   import RichBlockZoomControls from './shared/RichBlockZoomControls.svelte'
+  import { mergeLegacyNodeOptions } from './shared/node-helpers'
+
+  /** @deprecated Pass these settings through `context.mermaidProps`. */
+  interface LegacyMermaidNodeProps extends NodeRendererMermaidProps {
+    isDark?: boolean | undefined
+    loading?: boolean | undefined
+  }
+
+  interface Props extends NodeProps<ParserCodeBlockNode>, LegacyMermaidNodeProps {}
 
   let {
     node,
     context = undefined,
-  }: NodeProps<ParserCodeBlockNode> = $props()
+    indexKey: _indexKey = undefined,
+    isDark = undefined,
+    loading = undefined,
+    ...directOptions
+  }: Props = $props()
 
   const { t } = getSafeI18n()
-  const options = $derived(context?.mermaidProps)
+  const resolvedNode = $derived(
+    loading === undefined ? node : { ...node, loading },
+  )
+  const resolvedContext = $derived(mergeLegacyNodeOptions(context, {
+    isDark,
+    mermaidProps: directOptions,
+  }))
+  const options = $derived(resolvedContext.mermaidProps)
   const block = new MermaidBlockState(() => ({
-    context,
-    node,
+    context: resolvedContext,
+    node: resolvedNode,
   }))
 
   function showCopyTooltip(event: MouseEvent | FocusEvent): void {

@@ -1,6 +1,6 @@
 import type { KatexModule } from '../../optional/katex'
 import type { BackpressureOptions } from '../../workers/katexWorkerTypes'
-import { katexRuntime } from '../../optional/katex'
+import { getKatex } from '../../optional/legacy'
 import {
   renderKaTeXWithBackpressure,
   setKaTeXCache,
@@ -57,7 +57,7 @@ export async function renderKatexMarkup(
       throw error
   }
 
-  const renderer = await (dependencies.getRenderer ?? katexRuntime.get)()
+  const renderer = await (dependencies.getRenderer ?? getKatex)()
   if (!renderer)
     throw new Error('KaTeX renderer is not available.')
 

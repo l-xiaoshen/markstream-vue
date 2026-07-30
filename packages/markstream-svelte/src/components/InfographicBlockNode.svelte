@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { CodeBlockNode as ParserCodeBlockNode } from 'stream-markdown-parser'
   import type { NodeProps } from '../types/componentProps'
+  import type { NodeRendererInfographicProps } from '../types/renderer'
   import { getSafeI18n } from '../i18n/safeI18n'
   import { InfographicBlockState } from '../state/blocks/InfographicBlockState.svelte'
   import InfographicIcon from './shared/InfographicIcon.svelte'
@@ -8,17 +9,37 @@
   import RichBlockFullscreenModal from './shared/RichBlockFullscreenModal.svelte'
   import RichBlockModeToggle from './shared/RichBlockModeToggle.svelte'
   import RichBlockZoomControls from './shared/RichBlockZoomControls.svelte'
+  import { mergeLegacyNodeOptions } from './shared/node-helpers'
+
+  /** @deprecated Pass these settings through `context.infographicProps`. */
+  interface LegacyInfographicNodeProps extends NodeRendererInfographicProps {
+    isDark?: boolean | undefined
+    loading?: boolean | undefined
+  }
+
+  interface Props extends NodeProps<ParserCodeBlockNode>, LegacyInfographicNodeProps {}
 
   let {
     node,
     context = undefined,
-  }: NodeProps<ParserCodeBlockNode> = $props()
+    indexKey: _indexKey = undefined,
+    isDark = undefined,
+    loading = undefined,
+    ...directOptions
+  }: Props = $props()
 
   const { t } = getSafeI18n()
-  const options = $derived(context?.infographicProps)
+  const resolvedNode = $derived(
+    loading === undefined ? node : { ...node, loading },
+  )
+  const resolvedContext = $derived(mergeLegacyNodeOptions(context, {
+    infographicProps: directOptions,
+    isDark,
+  }))
+  const options = $derived(resolvedContext.infographicProps)
   const block = new InfographicBlockState(() => ({
-    context,
-    node,
+    context: resolvedContext,
+    node: resolvedNode,
   }))
 
   function showCopyTooltip(event: MouseEvent | FocusEvent): void {

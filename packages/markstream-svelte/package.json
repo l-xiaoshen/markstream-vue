@@ -84,7 +84,7 @@
     "dev": "vite dev",
     "preview": "vite preview",
     "test": "pnpm --workspace-root exec vitest run packages/markstream-svelte/test",
-    "test:types": "tsc -p tsconfig.tests.json --noEmit",
+    "test:types": "pnpm run build && tsc -p tsconfig.tests.json --noEmit",
     "typecheck": "pnpm --dir ../markdown-parser build && pnpm --dir ../markstream-core build && svelte-check --tsconfig ./tsconfig.build.json",
     "prepublishOnly": "pnpm run build && pnpm run check:workspace-deps-published",
     "check:core-published": "node ../../scripts/check-core-published.mjs --package-json package.json --core-package-json ../markstream-core/package.json",

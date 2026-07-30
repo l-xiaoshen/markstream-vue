@@ -63,6 +63,10 @@ jobs:
       - name: Typecheck
         run: nr typecheck
 
+      - name: Svelte public API typecheck (Ubuntu only)
+        if: matrix.os == 'ubuntu-latest'
+        run: pnpm run -C packages/markstream-svelte test:types
+
       - name: Run tests
         run: pnpm run build:parser && pnpm run build:core && nr test -- --run
 

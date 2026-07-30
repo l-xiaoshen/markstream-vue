@@ -1,26 +1,34 @@
-# Vue / React / Svelte Component Parity
+# Svelte component architecture
 
-`markstream-svelte` exports the same public component names as `markstream-vue` and `markstream-react`.
+`markstream-svelte` keeps framework-level feature parity without mirroring
+another renderer's internal component tree.
 
-| Vue / React component | Svelte component | Notes |
-| --- | --- | --- |
-| `AdmonitionNode` | `AdmonitionNode.svelte` | Markdown admonition block |
-| `BlockquoteNode` | `BlockquoteNode.svelte` | Recursive child rendering |
-| `CheckboxNode` | `CheckboxNode.svelte` | Task-list checkbox |
-| `CodeBlockNode` | `CodeBlockNode.svelte` | Renders a stable `<pre><code>` surface, then uses shared HTML enhancement for Monaco |
-| `MarkdownCodeBlockNode` | `MarkdownCodeBlockNode.svelte` | Plain code block parity export |
-| `MermaidBlockNode` | `MermaidBlockNode.svelte` | Worker-enhanced through `enhanceRenderedHtml` |
-| `D2BlockNode` | `D2BlockNode.svelte` | Optional D2 peer, same loader API |
-| `InfographicBlockNode` | `InfographicBlockNode.svelte` | Optional infographic peer, same render path as Angular enhancement |
-| `MathInlineNode` / `MathBlockNode` | `MathInlineNode.svelte` / `MathBlockNode.svelte` | KaTeX worker/client API matches other packages |
-| `NodeRenderer` | `NodeRenderer.svelte` | Accepts aligned renderer props and Svelte callback props; also exported as `MarkdownRender` |
-| Internal renderer helpers | `NodeOutlet.svelte`, `RenderChildren.svelte`, `InlineWrapNode.svelte` | Exported for parity debugging and custom renderer composition |
-| All inline/block nodes | Same name `.svelte` component | Exported from package root |
+## Public entries
 
-## API Alignment
+- `markstream-svelte` exports the renderer, typed custom-component APIs,
+  built-in node renderers, optional-peer controls, parser/HTML helpers, and
+  worker APIs.
+- Dedicated `markstream-svelte/workers/*` entries expose the bundled KaTeX and
+  Mermaid worker scripts.
 
-- Root default export is `NodeRenderer`.
-- Component names match the Vue and React package root exports.
-- Worker helper exports match the existing package names: `setKaTeXWorker`, `setMermaidWorker`, CDN worker builders, and worker entry paths.
-- Optional renderer toggles match existing packages: `enableKatex`, `disableKatex`, `enableMermaid`, `disableMermaid`, `enableD2`, `disableD2`.
-- Custom components use `setCustomComponents(customId, mapping)` and receive `node`, `context`/`ctx`, `customId`, `isDark`, `indexKey`, and `typewriter`.
+Internal orchestration components such as `NodeOutlet`, `CodeBlockOutlet`,
+`RenderChildren`, and `InlineWrapNode` are not public API.
+`PreCodeNode` is public from the root entry for callers that want the built-in
+non-Monaco code renderer explicitly.
+
+## Prop contracts
+
+- Leaf nodes receive `{ node }`.
+- Context-aware nodes receive `{ node, context? }`.
+- Recursive/indexed nodes receive `{ node, context?, indexKey? }`.
+- Rich blocks read domain-specific settings from `context` instead of extending
+  their component props. Their former direct settings remain deprecated
+  compatibility props.
+- Custom components canonically receive `node`, `context`, and `indexKey`;
+  renderer settings such as dark mode, streaming, and option bags live in
+  `context`. Deprecated top-level aliases and rich option-bag fields are also
+  supplied for compatibility.
+
+All public node inputs are discriminated unions derived from
+`stream-markdown-parser`; application-owned custom nodes remain generic at the
+renderer and registry boundaries.

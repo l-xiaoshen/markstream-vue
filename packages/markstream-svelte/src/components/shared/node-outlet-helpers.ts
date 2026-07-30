@@ -1,65 +1,110 @@
-import type { SvelteRenderableNode, SvelteRenderContext } from './node-helpers'
-import { clampPreviewHeight, estimateInfographicPreviewHeight, estimateMermaidPreviewHeight, parsePositiveNumber } from './diagram-height'
-import { getHtmlTagFromContent, resolveCodeBlockLanguage, stripCustomHtmlWrapper } from './node-helpers'
+import type {
+  BaseNode,
+  CodeBlockNode,
+  HtmlBlockNode,
+  HtmlInlineNode,
+} from 'stream-markdown-parser'
+import type {
+  MarkstreamSvelteComponent,
+  RuntimeCustomComponentMap,
+} from '../../customComponents'
+import type { CustomMarkdownNode } from '../../types/nodes'
+import type {
+  NodeRendererInfographicProps,
+  NodeRendererMermaidProps,
+  SvelteRenderContext,
+} from '../../types/renderer'
+import {
+  getHtmlTagFromContent,
+  stripCustomHtmlWrapper,
+} from 'stream-markdown-parser'
+import { isNodeType } from '../../types/nodes'
+import {
+  clampPreviewHeight,
+  estimateInfographicPreviewHeight,
+  estimateMermaidPreviewHeight,
+  parsePositiveNumber,
+} from '../../utils/diagramLayout'
+import { normalizeLanguageIdentifier } from '../../utils/language'
 
 export type CodeBlockMode = 'mermaid' | 'd2' | 'infographic' | 'pre' | 'code'
 
 export function resolveNodeOutletCodeMode(
-  node: SvelteRenderableNode,
+  node: CodeBlockNode,
   context?: SvelteRenderContext,
 ): CodeBlockMode {
-  if (context?.renderCodeBlocksAsPre)
-    return 'pre'
-
-  const language = resolveCodeBlockLanguage(node)
+  const language = normalizeLanguageIdentifier(node.language)
   if (language === 'd2' || language === 'd2lang')
     return 'd2'
   if (language === 'infographic')
     return 'infographic'
   if (language === 'mermaid')
     return 'mermaid'
-  return 'code'
+  return context?.renderCodeBlocksAsPre ? 'pre' : 'code'
 }
 
-export function resolveHtmlTag(node: SvelteRenderableNode) {
-  return String((node as any)?.tag || '').trim().toLowerCase() || getHtmlTagFromContent((node as any)?.content)
+function hasHtmlTag(node: BaseNode): node is BaseNode & { tag: string } {
+  return 'tag' in node && typeof node.tag === 'string'
 }
 
-export function coerceCustomHtmlNode(node: SvelteRenderableNode) {
+function hasHtmlContent(node: BaseNode): node is BaseNode & { content: string } {
+  return 'content' in node && typeof node.content === 'string'
+}
+
+function getHtmlContent(node: BaseNode): string {
+  return hasHtmlContent(node) ? node.content : ''
+}
+
+export function resolveHtmlTag(node: BaseNode): string {
+  const explicitTag = hasHtmlTag(node) ? node.tag.trim().toLowerCase() : ''
+  return explicitTag || getHtmlTagFromContent(getHtmlContent(node))
+}
+
+export type CoercedCustomHtmlNode<TNode extends BaseNode>
+  = TNode | (Omit<TNode, 'type'> & CustomMarkdownNode<string>)
+
+export function coerceCustomHtmlNode<TNode extends BaseNode>(
+  node: TNode,
+): CoercedCustomHtmlNode<TNode> {
   const tag = resolveHtmlTag(node)
   if (!tag)
     return node
+
   return {
-    ...(node as any),
+    ...node,
     type: tag,
     tag,
-    content: stripCustomHtmlWrapper((node as any)?.content, tag),
-  } as SvelteRenderableNode
+    content: stripCustomHtmlWrapper(getHtmlContent(node), tag),
+  }
 }
 
-export function coerceBuiltinHtmlNode(node: SvelteRenderableNode, resolvedType: string) {
+export function coerceBuiltinHtmlNode(node: HtmlBlockNode): HtmlBlockNode
+export function coerceBuiltinHtmlNode(node: HtmlInlineNode): HtmlInlineNode
+export function coerceBuiltinHtmlNode(
+  node: HtmlBlockNode | HtmlInlineNode,
+): HtmlBlockNode | HtmlInlineNode {
   const tag = resolveHtmlTag(node)
   if (!tag)
     return node
+
   return {
-    ...(node as any),
-    type: resolvedType,
+    ...node,
     tag,
-  } as SvelteRenderableNode
+  }
 }
 
 export function resolveNodeOutletCustomInputs(
-  node: SvelteRenderableNode,
+  node: BaseNode,
   context?: SvelteRenderContext,
-) {
-  if (String((node as any)?.type || '') !== 'code_block')
+): Record<string, unknown> | null {
+  if (!isNodeType(node, 'code_block'))
     return null
 
   const codeMode = resolveNodeOutletCodeMode(node, context)
   if (codeMode === 'mermaid') {
     return withEstimatedPreviewHeight(
       context?.mermaidProps,
-      estimateMermaidPreviewHeight(getNodeCode(node)),
+      estimateMermaidPreviewHeight(node.code),
     )
   }
   if (codeMode === 'd2')
@@ -67,38 +112,39 @@ export function resolveNodeOutletCustomInputs(
   if (codeMode === 'infographic') {
     return withEstimatedPreviewHeight(
       context?.infographicProps,
-      estimateInfographicPreviewHeight(getNodeCode(node)),
+      estimateInfographicPreviewHeight(node.code),
     )
   }
   return context?.codeBlockProps ?? null
 }
 
-function getNodeCode(node: SvelteRenderableNode) {
-  return String((node as any)?.code ?? '')
-}
-
-function withEstimatedPreviewHeight(props: Record<string, any> | null | undefined, estimatedHeight: number) {
-  const next = { ...(props || {}) }
+function withEstimatedPreviewHeight(
+  props: NodeRendererMermaidProps | NodeRendererInfographicProps | undefined,
+  estimatedHeight: number,
+): Record<string, unknown> {
+  const next = { ...(props ?? {}) }
   if (parsePositiveNumber(next.estimatedPreviewHeightPx) == null) {
     next.estimatedPreviewHeightPx = clampPreviewHeight(
       estimatedHeight,
       undefined,
-      next.maxHeight === 'none' ? null : (parsePositiveNumber(next.maxHeight) ?? undefined),
+      next.maxHeight === 'none'
+        ? null
+        : (parsePositiveNumber(next.maxHeight) ?? undefined),
     )
   }
   return next
 }
 
 export function resolveNodeOutletCustomComponent(
-  node: SvelteRenderableNode,
+  node: BaseNode,
   context?: SvelteRenderContext,
-  customComponents?: Record<string, any> | null,
-) {
+  customComponents?: RuntimeCustomComponentMap | null,
+): MarkstreamSvelteComponent | null {
   const mapping = customComponents ?? context?.customComponents ?? null
-  const resolvedType = String((node as any)?.type || '')
+  const resolvedType = node.type
 
-  if (resolvedType === 'code_block') {
-    const language = resolveCodeBlockLanguage(node)
+  if (isNodeType(node, 'code_block')) {
+    const language = normalizeLanguageIdentifier(node.language)
     const customForLanguage = language ? mapping?.[language] : null
     if (customForLanguage)
       return customForLanguage

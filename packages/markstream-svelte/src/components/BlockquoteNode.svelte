@@ -1,16 +1,19 @@
 <script lang="ts">
-  import type { SvelteRenderableNode, SvelteRenderContext } from './shared/node-helpers'
+  import type { BlockquoteNode as ParserBlockquoteNode } from 'stream-markdown-parser'
+  import type { NodeProps } from '../types/componentProps'
   import RenderChildren from './RenderChildren.svelte'
-  import { getNodeList, getString } from './shared/node-helpers'
 
-  interface Props {
-    node: SvelteRenderableNode;
-    context?: SvelteRenderContext | undefined;
-    indexKey?: string | number | undefined;
+  let {
+    node,
+    context = undefined,
+    indexKey = undefined,
+  }: NodeProps<ParserBlockquoteNode> = $props()
+  let cite = $derived(resolveCite(node))
+
+  function resolveCite(blockquote: ParserBlockquoteNode): string {
+    if (!('cite' in blockquote))
+      return ''
+    return blockquote.cite == null ? '' : String(blockquote.cite)
   }
-
-  let { node, context = undefined, indexKey = undefined }: Props = $props();
-
-  let cite = $derived(getString((node as any)?.cite));
 </script>
-<blockquote class="blockquote blockquote-node" dir="auto" cite={cite || undefined}><RenderChildren nodes={getNodeList((node as any)?.children)} context={context} prefix={String(indexKey ?? 'blockquote') + '-blockquote'} /></blockquote>
+<blockquote class="blockquote blockquote-node" dir="auto" cite={cite || undefined}><RenderChildren nodes={node.children} context={context} prefix={String(indexKey ?? 'blockquote') + '-blockquote'} /></blockquote>

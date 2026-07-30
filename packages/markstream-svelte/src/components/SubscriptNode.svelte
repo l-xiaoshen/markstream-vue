@@ -1,17 +1,13 @@
 <script lang="ts">
-  import type { SvelteRenderableNode, SvelteRenderContext } from './shared/node-helpers'
+  import type { SubscriptNode as ParserSubscriptNode } from 'stream-markdown-parser'
+  import type { NodeProps } from '../types/componentProps'
   import InlineWrapNode from './InlineWrapNode.svelte'
 
-  type Props = {
-    node: SvelteRenderableNode
-    context?: SvelteRenderContext
-    indexKey?: string | number
-  };
   let {
     node,
     context = undefined,
     indexKey = undefined
-  }: Props = $props()
+  }: NodeProps<ParserSubscriptNode> = $props()
 </script>
 
 <InlineWrapNode {node} {context} {indexKey} tag="sub" />

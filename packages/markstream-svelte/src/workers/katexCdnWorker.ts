@@ -1,4 +1,12 @@
-export type KaTeXCDNWorkerMode = 'classic' | 'module'
+import type { KatexOptions } from 'katex'
+import type { KaTeXWorkerInitRequest } from '../types/runtimeWorkers'
+import {
+  createModuleWorkerFromSource,
+  stringifyForWorker,
+  WORKER_ERROR_MESSAGE_SOURCE,
+} from './internal/cdnWorker'
+
+export type KaTeXCDNWorkerMode = 'module'
 
 export interface KaTeXCDNWorkerOptions {
   katexUrl: string
@@ -6,11 +14,7 @@ export interface KaTeXCDNWorkerOptions {
   mode?: KaTeXCDNWorkerMode
   debug?: boolean
   workerOptions?: WorkerOptions
-  renderOptions?: {
-    throwOnError?: boolean
-    output?: string
-    strict?: string
-  }
+  renderOptions?: Pick<KatexOptions, 'output' | 'strict' | 'throwOnError'>
 }
 
 export interface KaTeXCDNWorkerHandle {
@@ -19,13 +23,8 @@ export interface KaTeXCDNWorkerHandle {
   source: string
 }
 
-function stringifyForWorker(value: any) {
-  return JSON.stringify(value)
-}
-
 export function buildKaTeXCDNWorkerSource(options: KaTeXCDNWorkerOptions): string {
-  const mode: KaTeXCDNWorkerMode = options.mode ?? 'classic'
-  const renderOptions = {
+  const renderOptions: KatexOptions = {
     throwOnError: true,
     displayMode: true,
     output: 'html',
@@ -37,141 +36,97 @@ export function buildKaTeXCDNWorkerSource(options: KaTeXCDNWorkerOptions): strin
   const katexUrlLiteral = stringifyForWorker(options.katexUrl)
   const mhchemUrlLiteral = options.mhchemUrl ? stringifyForWorker(options.mhchemUrl) : '""'
 
-  if (mode === 'module') {
-    return `
-let DEBUG = false
-let katex = null
-let katexLoadError = null
-let loadPromise = null
+  return `
+const state = {
+  debug: false,
+  katex: null,
+  loadError: null,
+  loadPromise: null,
+}
 
 function normalizeKaTeX(mod) {
-  const resolved = mod && mod.default ? mod.default : mod
+  const resolved = mod?.default ?? mod
   if (resolved && typeof resolved.renderToString === 'function')
     return resolved
   return null
 }
 
+${WORKER_ERROR_MESSAGE_SOURCE}
+
 async function loadKaTeX() {
-  if (katex || katexLoadError)
+  if (state.katex || state.loadError)
     return
-  if (!loadPromise) {
-    loadPromise = (async () => {
+  if (!state.loadPromise) {
+    state.loadPromise = (async () => {
       try {
         const mod = await import(${katexUrlLiteral})
-        katex = normalizeKaTeX(mod) || null
+        state.katex = normalizeKaTeX(mod)
         const mhchemUrl = ${mhchemUrlLiteral}
         if (mhchemUrl) {
           try {
             await import(mhchemUrl)
           }
-          catch (e) {
-            if (DEBUG)
-              console.warn('[markstream-svelte:katex-cdn-worker] failed to load mhchem', e)
+          catch (error) {
+            if (state.debug)
+              console.warn('[markstream-svelte:katex-cdn-worker] failed to load mhchem', error)
           }
         }
       }
-      catch (e) {
-        katexLoadError = e
+      catch (error) {
+        state.loadError = error
       }
     })()
   }
-  await loadPromise
+  await state.loadPromise
 }
 
-globalThis.addEventListener('message', async (ev) => {
-  const data = ev.data || {}
-  if (data.type === 'init') {
-    DEBUG = !!data.debug
+self.addEventListener('message', async (event) => {
+  const request = event.data
+  if (request.type === 'init') {
+    state.debug = request.debug
     return
   }
-
-  const id = data.id ?? ''
-  const content = data.content ?? ''
-  const displayMode = data.displayMode ?? true
+  if (request.type !== 'render')
+    return
 
   await loadKaTeX()
 
-  if (!katex) {
-    const reason = katexLoadError ? String(katexLoadError?.message || katexLoadError) : 'KaTeX is not available in worker'
-    globalThis.postMessage({ id, error: reason, content, displayMode })
+  if (!state.katex) {
+    const error = state.loadError
+      ? errorMessage(state.loadError)
+      : 'KaTeX is not available in worker'
+    self.postMessage({
+      type: 'render-error',
+      id: request.id,
+      error,
+      content: request.content,
+      displayMode: request.displayMode,
+    })
     return
   }
 
   try {
     const opts = ${renderOptionsLiteral}
-    const html = katex.renderToString(content, { ...opts, displayMode: !!displayMode })
-    globalThis.postMessage({ id, html, content, displayMode })
+    const html = state.katex.renderToString(request.content, {
+      ...opts,
+      displayMode: request.displayMode,
+    })
+    self.postMessage({
+      type: 'rendered',
+      id: request.id,
+      html,
+      content: request.content,
+      displayMode: request.displayMode,
+    })
   }
-  catch (err) {
-    globalThis.postMessage({ id, error: String(err?.message || err), content, displayMode })
-  }
-})
-`.trimStart()
-  }
-
-  return `
-let DEBUG = false
-let katex = null
-let katexLoadError = null
-
-function normalizeKaTeX(val) {
-  const resolved = val && val.default ? val.default : val
-  if (resolved && typeof resolved.renderToString === 'function')
-    return resolved
-  return null
-}
-
-function loadKaTeXClassic() {
-  if (katex || katexLoadError)
-    return
-  try {
-    importScripts(${katexUrlLiteral})
-    const mhchemUrl = ${mhchemUrlLiteral}
-    if (mhchemUrl) {
-      try {
-        importScripts(mhchemUrl)
-      }
-      catch (e) {
-        if (DEBUG)
-          console.warn('[markstream-svelte:katex-cdn-worker] failed to load mhchem', e)
-      }
-    }
-    katex = normalizeKaTeX(globalThis.katex)
-  }
-  catch (e) {
-    katexLoadError = e
-  }
-}
-
-loadKaTeXClassic()
-
-globalThis.addEventListener('message', (ev) => {
-  const data = ev.data || {}
-  if (data.type === 'init') {
-    DEBUG = !!data.debug
-    return
-  }
-
-  const id = data.id ?? ''
-  const content = data.content ?? ''
-  const displayMode = data.displayMode ?? true
-
-  if (!katex && !katexLoadError)
-    loadKaTeXClassic()
-
-  if (!katex) {
-    const reason = katexLoadError ? String(katexLoadError?.message || katexLoadError) : 'KaTeX is not available in worker'
-    globalThis.postMessage({ id, error: reason, content, displayMode })
-    return
-  }
-
-  try {
-    const opts = ${renderOptionsLiteral}
-    const html = katex.renderToString(content, { ...opts, displayMode: !!displayMode })
-    globalThis.postMessage({ id, html, content, displayMode })
-  }
-  catch (err) {
-    globalThis.postMessage({ id, error: String(err?.message || err), content, displayMode })
+  catch (error) {
+    self.postMessage({
+      type: 'render-error',
+      id: request.id,
+      error: errorMessage(error),
+      content: request.content,
+      displayMode: request.displayMode,
+    })
   }
 })
 `.trimStart()
@@ -179,45 +134,8 @@ globalThis.addEventListener('message', (ev) => {
 
 export function createKaTeXWorkerFromCDN(options: KaTeXCDNWorkerOptions): KaTeXCDNWorkerHandle {
   const source = buildKaTeXCDNWorkerSource(options)
-
-  if (typeof Worker === 'undefined' || typeof URL === 'undefined' || typeof Blob === 'undefined') {
-    return {
-      worker: null,
-      dispose: () => {},
-      source,
-    }
-  }
-
-  const blob = new Blob([source], { type: 'text/javascript' })
-  const url = URL.createObjectURL(blob)
-  let revoked = false
-
-  const dispose = () => {
-    if (revoked)
-      return
-    revoked = true
-    try {
-      URL.revokeObjectURL(url)
-    }
-    catch {
-      // Ignore revoke failures.
-    }
-  }
-
-  const mode = options.mode ?? 'classic'
-  const workerOptions = mode === 'module'
-    ? ({ ...(options.workerOptions ?? {}), type: 'module' as const } satisfies WorkerOptions)
-    : options.workerOptions
-
-  const worker = new Worker(url, workerOptions)
-  if (options.debug) {
-    try {
-      worker.postMessage({ type: 'init', debug: true })
-    }
-    catch {
-      // Ignore init messaging failures.
-    }
-  }
-
-  return { worker, dispose, source }
+  const initRequest: KaTeXWorkerInitRequest | undefined = options.debug
+    ? { type: 'init', debug: true }
+    : undefined
+  return createModuleWorkerFromSource(source, options.workerOptions, initRequest)
 }

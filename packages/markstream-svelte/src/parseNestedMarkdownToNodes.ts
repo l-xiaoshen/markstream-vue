@@ -1,15 +1,15 @@
 import type { BaseNode, MarkdownIt, ParseOptions } from 'stream-markdown-parser'
-import { getMarkdown, mergeCustomHtmlTags, parseMarkdownToStructure } from 'stream-markdown-parser'
-import { hydrateCustomTagContent } from './hydrateCustomTagContent'
+import type { MarkdownRuntime } from './internal/markdownRuntime'
+import {
+  createMarkdownRuntime,
+  defaultMarkdownRuntime,
+} from './internal/markdownRuntime'
+import { getRenderableNodeChildren } from './types/nodes'
+import { copyNodes, getNodeContent } from './utils/rendering/nodes'
 
-type NestedMarkdownSourceNode = BaseNode & {
-  children?: BaseNode[]
-  content?: string
-}
-
-export interface NestedMarkdownNodesInput {
-  node?: NestedMarkdownSourceNode | null
-  nodes?: readonly BaseNode[] | null
+export interface NestedMarkdownNodesInput<TNode extends BaseNode = BaseNode> {
+  node?: TNode | null
+  nodes?: readonly TNode[] | null
   content?: string | null
 }
 
@@ -22,86 +22,90 @@ export interface NestedMarkdownNodesOptions {
 }
 
 const DEFAULT_CACHE_KEY = 'markstream-svelte-nested-nodes'
-const markdownCache = new Map<string, MarkdownIt>()
 
+export interface NestedMarkdownParser {
+  parse: {
+    <TNode extends BaseNode>(
+      input: NestedMarkdownNodesInput<TNode> & { nodes: readonly TNode[] },
+      options?: NestedMarkdownNodesOptions,
+    ): TNode[]
+    (
+      input: NestedMarkdownNodesInput,
+      options?: NestedMarkdownNodesOptions,
+    ): BaseNode[]
+  }
+}
+
+function createParser(markdownRuntime: MarkdownRuntime): NestedMarkdownParser {
+  function parse<TNode extends BaseNode>(
+    input: NestedMarkdownNodesInput<TNode> & { nodes: readonly TNode[] },
+    options?: NestedMarkdownNodesOptions,
+  ): TNode[]
+  function parse(
+    input: NestedMarkdownNodesInput,
+    options?: NestedMarkdownNodesOptions,
+  ): BaseNode[]
+  function parse(
+    input: NestedMarkdownNodesInput,
+    options: NestedMarkdownNodesOptions = {},
+  ): BaseNode[] {
+    if (Array.isArray(input.nodes))
+      return copyNodes(input.nodes)
+
+    const nestedNode = input.node
+    if (nestedNode) {
+      const children = getRenderableNodeChildren(nestedNode)
+      if (children.length > 0)
+        return copyNodes(children)
+    }
+
+    const content = resolveContent(input)
+    if (!content)
+      return []
+
+    return markdownRuntime.parse(content, {
+      cacheKey: options.cacheKey || DEFAULT_CACHE_KEY,
+      customHtmlTags: options.customHtmlTags,
+      customMarkdownIt: options.customMarkdownIt,
+      final: options.final ?? resolveFinalFromNode(input.node),
+      parseOptions: options.parseOptions,
+    })
+  }
+
+  return { parse }
+}
+
+export function createNestedMarkdownParser(): NestedMarkdownParser {
+  return createParser(createMarkdownRuntime())
+}
+
+const defaultNestedMarkdownParser = createParser(defaultMarkdownRuntime)
+
+export function parseNestedMarkdownToNodes<TNode extends BaseNode>(
+  input: NestedMarkdownNodesInput<TNode> & { nodes: readonly TNode[] },
+  options?: NestedMarkdownNodesOptions,
+): TNode[]
+export function parseNestedMarkdownToNodes(
+  input: NestedMarkdownNodesInput,
+  options?: NestedMarkdownNodesOptions,
+): BaseNode[]
 export function parseNestedMarkdownToNodes(
   input: NestedMarkdownNodesInput,
   options: NestedMarkdownNodesOptions = {},
 ): BaseNode[] {
-  if (Array.isArray(input.nodes))
-    return input.nodes.slice()
-
-  const nestedNode = input.node
-  if (nestedNode) {
-    const children = getNodeList(nestedNode.children)
-    if (children.length > 0)
-      return children.slice()
-  }
-
-  const content = resolveContent(input)
-  if (!content)
-    return []
-
-  const parseOptions = resolveParseOptions(input, options)
-  const markdown = resolveMarkdownInstance(options)
-  return hydrateCustomTagContent(
-    parseMarkdownToStructure(content, markdown, parseOptions),
-    content,
-    mergeCustomHtmlTags(options.customHtmlTags, parseOptions?.customHtmlTags),
-  )
+  return defaultNestedMarkdownParser.parse(input, options)
 }
 
 function resolveContent(input: NestedMarkdownNodesInput) {
   if (typeof input.content === 'string')
     return input.content
-  if (typeof input.node?.content === 'string')
-    return input.node.content
-  return ''
+  return input.node ? getNodeContent(input.node) ?? '' : ''
 }
 
-function resolveParseOptions(
-  input: NestedMarkdownNodesInput,
-  options: NestedMarkdownNodesOptions,
-): ParseOptions | undefined {
-  const base = options.parseOptions ?? {}
-  const resolvedFinal = options.final ?? resolveFinalFromNode(input.node)
-  const customHtmlTags = mergeCustomHtmlTags(options.customHtmlTags, base.customHtmlTags)
-
-  if (resolvedFinal == null && customHtmlTags.length === 0)
-    return base
-
-  return {
-    ...base,
-    ...(resolvedFinal == null ? {} : { final: resolvedFinal }),
-    ...(customHtmlTags.length === 0 ? {} : { customHtmlTags }),
-  } as ParseOptions
-}
-
-function resolveFinalFromNode(node?: NestedMarkdownSourceNode | null) {
-  if (!node || typeof node !== 'object')
+function resolveFinalFromNode(node?: BaseNode | null) {
+  if (!node)
     return undefined
   if (typeof node.loading === 'boolean')
     return !node.loading
   return undefined
-}
-
-function resolveMarkdownInstance(options: NestedMarkdownNodesOptions) {
-  const normalizedTags = mergeCustomHtmlTags(options.customHtmlTags, options.parseOptions?.customHtmlTags)
-  const cacheKey = `${options.cacheKey || DEFAULT_CACHE_KEY}::${normalizedTags.join(',')}`
-  let markdown = markdownCache.get(cacheKey)
-
-  if (!markdown) {
-    markdown = getMarkdown(cacheKey, {
-      customHtmlTags: normalizedTags,
-    })
-    markdownCache.set(cacheKey, markdown)
-  }
-
-  return options.customMarkdownIt
-    ? options.customMarkdownIt(markdown)
-    : markdown
-}
-
-function getNodeList(value: unknown) {
-  return Array.isArray(value) ? value as BaseNode[] : []
 }

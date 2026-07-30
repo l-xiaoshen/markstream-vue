@@ -1,5 +1,10 @@
 import type { BaseNode } from 'stream-markdown-parser'
-import { normalizeCustomHtmlTags, normalizeCustomHtmlTagName as normalizeTagName } from 'stream-markdown-parser'
+import {
+  normalizeCustomHtmlTags,
+  normalizeCustomHtmlTagName as normalizeTagName,
+} from 'stream-markdown-parser'
+import { hasNodeChildren, isKnownMarkdownNode } from './types/nodes'
+import { copyNodes, getNodeTag } from './utils/rendering/nodes'
 
 interface CustomTagSegment {
   tag: string
@@ -16,65 +21,133 @@ interface CustomTagOpen {
   openEnd: number
 }
 
-type HydratableNode = BaseNode & {
-  tag?: string
-  content?: string
-  [key: string]: unknown
-}
+type SegmentQueues = Map<string, CustomTagSegment[]>
 
 const TAG_TOKEN_RE = /<\/?([A-Z][\w:-]*)(?:\s[^<>]*)?>/gi
 
-export function hydrateCustomTagContent<T extends BaseNode>(
-  nodes: readonly T[] | null | undefined,
+export function hydrateCustomTagContent<TNode extends BaseNode>(
+  nodes: readonly TNode[] | null | undefined,
   source: string,
   customHtmlTags?: readonly string[],
-): T[] {
-  const normalizedTags = normalizeCustomHtmlTags(customHtmlTags)
-  const tagSet = new Set(normalizedTags)
-  if (!source || tagSet.size === 0 || !Array.isArray(nodes) || nodes.length === 0)
-    return Array.isArray(nodes) ? nodes.slice() : []
+): TNode[] {
+  const sourceNodes = copyNodes(nodes)
+  const tagSet = new Set(normalizeCustomHtmlTags(customHtmlTags))
+  if (!source || tagSet.size === 0 || sourceNodes.length === 0)
+    return sourceNodes
 
   const segments = collectCustomTagSegments(source, tagSet)
   if (segments.length === 0)
-    return nodes.slice()
+    return sourceNodes
 
-  let segmentIndex = 0
-  const cloned = nodes.map(node => cloneNodeTree(node))
+  const segmentQueues = createSegmentQueues(segments)
+  return sourceNodes.map(node => hydrateNodeTree(node, tagSet, segmentQueues))
+}
 
-  const visitNode = (node: HydratableNode) => {
-    if (!node || typeof node !== 'object')
-      return
-
-    const tag = resolveCustomTagName(node, tagSet)
-    if (tag) {
-      const segment = consumeNextSegment(segments, tag, () => segmentIndex, nextIndex => (segmentIndex = nextIndex))
-      if (segment) {
-        node.tag = tag
-        node.type = tag
-        node.content = segment.innerContent
-        node.raw = segment.raw
-        if (typeof node.loading !== 'boolean')
-          node.loading = segment.loading
-      }
-    }
-
-    for (const value of Object.values(node)) {
-      if (!Array.isArray(value))
-        continue
-      for (const child of value) {
-        if (child && typeof child === 'object')
-          visitNode(child as HydratableNode)
-      }
+function hydrateNodeTree<TNode extends BaseNode>(
+  node: TNode,
+  tagSet: ReadonlySet<string>,
+  segmentQueues: SegmentQueues,
+): TNode {
+  const cloned: TNode = { ...node }
+  const tag = resolveCustomTagName(cloned, tagSet)
+  if (tag) {
+    const segment = consumeNextSegment(segmentQueues, tag)
+    if (segment) {
+      Object.assign(cloned, {
+        tag,
+        type: tag,
+        content: segment.innerContent,
+        raw: segment.raw,
+        ...(typeof cloned.loading === 'boolean' ? {} : { loading: segment.loading }),
+      })
     }
   }
 
-  for (const node of cloned)
-    visitNode(node)
-
+  cloneNestedNodeCollections(cloned, tagSet, segmentQueues)
   return cloned
 }
 
-function collectCustomTagSegments(source: string, tagSet: Set<string>) {
+function cloneNestedNodeCollections(
+  node: BaseNode,
+  tagSet: ReadonlySet<string>,
+  segmentQueues: SegmentQueues,
+): void {
+  function cloneNodes<TNode extends BaseNode>(nodes: readonly TNode[]): TNode[] {
+    return nodes.map(child => hydrateNodeTree(child, tagSet, segmentQueues))
+  }
+
+  if (!isKnownMarkdownNode(node)) {
+    if (hasNodeChildren(node))
+      Object.assign(node, { children: cloneNodes(node.children) })
+    return
+  }
+
+  switch (node.type) {
+    case 'heading':
+    case 'paragraph':
+    case 'inline':
+    case 'list_item':
+    case 'link':
+    case 'blockquote':
+    case 'table_cell':
+    case 'strong':
+    case 'emphasis':
+    case 'strikethrough':
+    case 'highlight':
+    case 'insert':
+    case 'subscript':
+    case 'superscript':
+    case 'footnote':
+    case 'admonition':
+    case 'vmr_container':
+    case 'html_block':
+    case 'html_inline':
+      node.children = cloneNodes(node.children ?? [])
+      return
+    case 'list':
+      node.items = cloneNodes(node.items)
+      return
+    case 'table':
+      node.header = hydrateNodeTree(node.header, tagSet, segmentQueues)
+      node.rows = cloneNodes(node.rows)
+      return
+    case 'table_row':
+      node.cells = cloneNodes(node.cells)
+      return
+    case 'definition_list':
+      node.items = cloneNodes(node.items)
+      return
+    case 'definition_item':
+      node.term = cloneNodes(node.term)
+      node.definition = cloneNodes(node.definition)
+      return
+    case 'text':
+    case 'text_special':
+    case 'code_block':
+    case 'inline_code':
+    case 'image':
+    case 'thematic_break':
+    case 'checkbox':
+    case 'checkbox_input':
+    case 'emoji':
+    case 'footnote_reference':
+    case 'footnote_anchor':
+    case 'hardbreak':
+    case 'math_inline':
+    case 'math_block':
+    case 'reference':
+    case 'label_open':
+    case 'label_close':
+      return
+    default:
+      assertNever(node)
+  }
+}
+
+function collectCustomTagSegments(
+  source: string,
+  tagSet: ReadonlySet<string>,
+): CustomTagSegment[] {
   const stack: CustomTagOpen[] = []
   const segments: CustomTagSegment[] = []
   let match: RegExpExecArray | null
@@ -86,8 +159,7 @@ function collectCustomTagSegments(source: string, tagSet: Set<string>) {
     if (!tag || !tagSet.has(tag))
       continue
 
-    const isClosing = raw.startsWith('</')
-    if (!isClosing) {
+    if (!raw.startsWith('</')) {
       stack.push({
         tag,
         start: match.index,
@@ -100,7 +172,10 @@ function collectCustomTagSegments(source: string, tagSet: Set<string>) {
     if (openIndex < 0)
       continue
 
-    const [open] = stack.splice(openIndex, 1)
+    const open = stack[openIndex]
+    if (!open)
+      continue
+    stack.splice(openIndex, 1)
     const closeStart = match.index
     const closeEnd = TAG_TOKEN_RE.lastIndex
     segments.push({
@@ -131,7 +206,7 @@ function collectCustomTagSegments(source: string, tagSet: Set<string>) {
   })
 }
 
-function findLastOpenIndex(stack: CustomTagOpen[], tag: string) {
+function findLastOpenIndex(stack: readonly CustomTagOpen[], tag: string): number {
   for (let index = stack.length - 1; index >= 0; index -= 1) {
     if (stack[index]?.tag === tag)
       return index
@@ -139,27 +214,24 @@ function findLastOpenIndex(stack: CustomTagOpen[], tag: string) {
   return -1
 }
 
-function consumeNextSegment(
-  segments: CustomTagSegment[],
-  tag: string,
-  getIndex: () => number,
-  setIndex: (value: number) => void,
-) {
-  let index = getIndex()
-  while (index < segments.length) {
-    const segment = segments[index]
-    index += 1
-    if (segment.tag !== tag)
-      continue
-    setIndex(index)
-    return segment
+function createSegmentQueues(segments: readonly CustomTagSegment[]): SegmentQueues {
+  const queues: SegmentQueues = new Map()
+  for (const segment of segments) {
+    const queue = queues.get(segment.tag)
+    if (queue)
+      queue.push(segment)
+    else
+      queues.set(segment.tag, [segment])
   }
-  setIndex(index)
-  return null
+  return queues
 }
 
-function resolveCustomTagName(node: Record<string, unknown>, tagSet: Set<string>) {
-  const byTag = normalizeTagName(node.tag)
+function consumeNextSegment(queues: SegmentQueues, tag: string): CustomTagSegment | null {
+  return queues.get(tag)?.shift() ?? null
+}
+
+function resolveCustomTagName(node: BaseNode, tagSet: ReadonlySet<string>): string {
+  const byTag = normalizeTagName(getNodeTag(node))
   if (byTag && tagSet.has(byTag))
     return byTag
 
@@ -167,21 +239,6 @@ function resolveCustomTagName(node: Record<string, unknown>, tagSet: Set<string>
   return byType && tagSet.has(byType) ? byType : ''
 }
 
-function cloneNodeTree<T extends BaseNode>(node: T): T {
-  if (!node || typeof node !== 'object')
-    return node
-
-  const cloned = Array.isArray(node)
-    ? node.map(item => cloneNodeTree(item)) as unknown as T
-    : { ...node }
-
-  if (!Array.isArray(cloned)) {
-    for (const [key, value] of Object.entries(cloned as Record<string, unknown>)) {
-      if (Array.isArray(value)) {
-        (cloned as Record<string, unknown>)[key] = value.map(item => cloneNodeTree(item as BaseNode))
-      }
-    }
-  }
-
-  return cloned
+function assertNever(node: never): never {
+  throw new Error(`Unhandled known Markdown node: ${JSON.stringify(node)}`)
 }

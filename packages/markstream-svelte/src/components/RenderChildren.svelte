@@ -1,12 +1,13 @@
 <script lang="ts">
-  import type { SvelteRenderableNode, SvelteRenderContext } from './shared/node-helpers'
+  import type { BaseNode } from 'stream-markdown-parser'
+  import type { SvelteRenderContext } from '../types/renderer'
   import NodeOutlet from './NodeOutlet.svelte'
 
   type Props = {
-    nodes?: readonly SvelteRenderableNode[] | null
-    context?: SvelteRenderContext
-    prefix?: string
-  };
+    nodes?: readonly BaseNode[] | null | undefined
+    context?: SvelteRenderContext | undefined
+    prefix?: string | undefined
+  }
   let {
     nodes = [],
     context = undefined,

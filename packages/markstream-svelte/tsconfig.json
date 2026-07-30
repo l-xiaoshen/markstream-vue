@@ -1,8 +1,8 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
-    "target": "ES2019",
-    "lib": ["DOM", "ESNext"],
+    "target": "ES2022",
+    "lib": ["DOM", "DOM.Iterable", "ES2023"],
     "baseUrl": ".",
     "module": "ESNext",
     "moduleResolution": "bundler",
@@ -12,12 +12,19 @@
       "stream-markdown-parser": ["../markdown-parser/src/index.ts"],
       "stream-markdown-parser/*": ["../markdown-parser/src/*"]
     },
-    "types": ["svelte", "vite/client", "node"],
+    "types": ["svelte", "vite/client"],
+    "strict": true,
+    "exactOptionalPropertyTypes": false,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "noUncheckedIndexedAccess": false,
+    "useUnknownInCatchVariables": true,
     "declaration": true,
     "declarationMap": false,
     "allowSyntheticDefaultImports": true,
     "esModuleInterop": true,
     "isolatedModules": true,
+    "verbatimModuleSyntax": true,
     "skipLibCheck": true
   },
   "include": ["src/**/*.ts", "src/**/*.svelte", "src/**/*.d.ts"],

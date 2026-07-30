@@ -1,4 +1,3 @@
-import type { PluginOption } from 'vite'
 import path from 'node:path'
 import { svelte } from '@sveltejs/vite-plugin-svelte'
 import { defineConfig } from 'vite'
@@ -64,6 +63,6 @@ export default defineConfig({
       customDistPath(_root, buildOutDir) {
         return path.resolve(buildOutDir, 'monacoeditorwork')
       },
-    }) as unknown as PluginOption,
+    }),
   ],
 })

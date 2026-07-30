@@ -1,0 +1,53 @@
+.chat-wrapper {
+  position: relative;
+  z-index: 1;
+  height: 100vh;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: padding-right 0.3s ease;
+}
+
+.chat-wrapper--with-sidebar {
+  padding-right: 300px;
+}
+
+.chat-container {
+  position: relative;
+  width: 100%;
+  max-width: 960px;
+  height: calc(100vh - 40px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--play-border);
+  border-radius: 24px;
+  background: linear-gradient(180deg, hsl(var(--ms-background) / 0.88), hsl(var(--ms-background) / 0.78));
+  backdrop-filter: blur(16px) saturate(1.4);
+  box-shadow:
+    0 0 0 1px hsl(var(--ms-border) / 0.1),
+    0 28px 84px hsl(var(--ms-foreground) / 0.1),
+    0 8px 24px hsl(var(--ms-foreground) / 0.04);
+}
+
+.chat-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(rgba(15, 23, 42, 0.018) 1px, transparent 1px), linear-gradient(90deg, rgba(15, 23, 42, 0.018) 1px, transparent 1px);
+  background-size: 30px 30px;
+  mask-image: linear-gradient(to bottom, rgba(0, 0, 0, 0.7), transparent 78%);
+}
+
+.chat-shell--test {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  padding: 24px 304px 24px 24px;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}

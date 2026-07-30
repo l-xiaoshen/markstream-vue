@@ -6,18 +6,14 @@ import {
   sanitizeHtmlAttrs,
   VOID_HTML_TAGS as VOID_ELEMENTS,
 } from 'stream-markdown-parser'
-import { escapeAttr, escapeHtml } from './components/shared/node-helpers'
+import { escapeAttr, escapeHtml, serializeSanitizedHtmlAttrs } from './utils/rendering/html'
 
-interface HtmlToken {
-  type: 'text' | 'tag_open' | 'tag_close' | 'self_closing'
-  tagName?: string
-  attrs?: Record<string, string>
-  content?: string
-}
+type HtmlToken
+  = | { type: 'text', content: string }
+    | { type: 'tag_close', tagName: string }
+    | { type: 'tag_open' | 'self_closing', tagName: string, attrs: Record<string, string> }
 
-function sanitizeAttrs(attrs: Record<string, string>, policy: HtmlPolicy, tagName?: string): Record<string, string> {
-  return sanitizeHtmlAttrs(attrs, policy, tagName)
-}
+type HtmlTagToken = Exclude<HtmlToken, { type: 'text' }>
 
 function tokenizeHtml(html: string): HtmlToken[] {
   const tokens: HtmlToken[] = []
@@ -117,29 +113,19 @@ function tokenizeHtml(html: string): HtmlToken[] {
   return tokens
 }
 
-function normalizeTagName(tagName: string | undefined): string {
-  return String(tagName ?? '').trim().toLowerCase()
+function normalizeTagName(tagName: string): string {
+  return tagName.trim().toLowerCase()
 }
 
-function serializeAttrs(attrs: Record<string, string>): string {
-  const pairs = Object.entries(attrs)
-  if (pairs.length === 0)
-    return ''
-
-  return pairs
-    .map(([name, value]) => value === '' ? ` ${name}` : ` ${name}="${escapeAttr(value)}"`)
-    .join('')
-}
-
-function serializeLiteralHtmlTag(token: HtmlToken) {
-  const tagName = String(token.tagName ?? '').trim()
+function serializeLiteralHtmlTag(token: HtmlTagToken) {
+  const tagName = token.tagName.trim()
   if (!tagName)
     return ''
 
   if (token.type === 'tag_close')
     return `&lt;/${escapeHtml(tagName)}&gt;`
 
-  const attrs = Object.entries(token.attrs ?? {})
+  const attrs = Object.entries(token.attrs)
     .map(([name, value]) => value === '' ? ` ${escapeHtml(name)}` : ` ${escapeHtml(name)}="${escapeAttr(value)}"`)
     .join('')
 
@@ -163,7 +149,7 @@ export function sanitizeHtmlContent(content: string, policy: HtmlPolicy = 'safe'
   for (const token of tokens) {
     if (token.type === 'text') {
       if (blockedDepth === 0)
-        output.push(escapeHtml(token.content ?? ''))
+        output.push(escapeHtml(token.content))
       continue
     }
 
@@ -188,12 +174,12 @@ export function sanitizeHtmlContent(content: string, policy: HtmlPolicy = 'safe'
     }
 
     if (token.type === 'self_closing') {
-      output.push(`<${tagName}${serializeAttrs(sanitizeAttrs(token.attrs ?? {}, policy, tagName))}>`)
+      output.push(`<${tagName}${serializeSanitizedHtmlAttrs(sanitizeHtmlAttrs(token.attrs, policy, tagName))}>`)
       continue
     }
 
     if (token.type === 'tag_open') {
-      output.push(`<${tagName}${serializeAttrs(sanitizeAttrs(token.attrs ?? {}, policy, tagName))}>`)
+      output.push(`<${tagName}${serializeSanitizedHtmlAttrs(sanitizeHtmlAttrs(token.attrs, policy, tagName))}>`)
       if (!VOID_ELEMENTS.has(tagName))
         stack.push(tagName)
       continue

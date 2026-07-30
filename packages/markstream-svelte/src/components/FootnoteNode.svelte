@@ -1,18 +1,16 @@
 <script lang="ts">
-  import type { SvelteRenderableNode, SvelteRenderContext } from './shared/node-helpers'
+  import type { FootnoteNode as ParserFootnoteNode } from 'stream-markdown-parser'
+  import type { NodeProps } from '../types/componentProps'
   import RenderChildren from './RenderChildren.svelte'
-  import { getNodeList, getString } from './shared/node-helpers'
 
-  interface Props {
-    node: SvelteRenderableNode
-    context?: SvelteRenderContext
-    indexKey?: string | number
-  }
+  let {
+    node,
+    context = undefined,
+    indexKey = undefined,
+  }: NodeProps<ParserFootnoteNode> = $props()
 
-  let { node, context = undefined, indexKey = undefined }: Props = $props()
-
-  let id = $derived(getString((node as any)?.id))
-  let children = $derived(getNodeList((node as any)?.children))
+  let id = $derived(node.id)
+  let children = $derived(node.children)
   let prefix = $derived(`footnote-${indexKey ?? (id || 'node')}`)
 </script>
 

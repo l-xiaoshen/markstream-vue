@@ -1,106 +1,72 @@
 <script lang="ts">
-  import MarkdownRender, {
-    disableKatex,
-    disableMermaid,
-    enableKatex,
-    enableMermaid,
-    MarkdownCodeBlockNode,
-    preloadCodeBlockRuntime,
-    setCustomComponents,
-    setKaTeXWorker,
-    setMermaidWorker,
+  import type {
+    NodeRendererCodeBlockProps,
+    RendererCustomComponentMap,
   } from 'markstream-svelte'
-  import KatexWorker from 'markstream-svelte/workers/katexRenderer.worker?worker&inline'
-  import MermaidWorker from 'markstream-svelte/workers/mermaidParser.worker?worker&inline'
-  import { onDestroy, onMount, tick } from 'svelte'
+  import type { TestLabSampleId } from '../../playground-shared/testLabFixtures'
+  import MarkdownRender, {
+    CodeBlockNode,
+    katexRuntime,
+    mermaidRuntime,
+  } from 'markstream-svelte'
+  import { onMount, tick, untrack } from 'svelte'
   import { streamContent } from '../../playground/src/const/markdown'
   import { TEST_LAB_SAMPLES } from '../../playground-shared/testLabFixtures'
-  import ThinkingNode from './components/ThinkingNode.svelte'
+  import type { PlaygroundTheme } from './config/playground'
+  import {
+    PLAYGROUND_CUSTOM_HTML_TAGS,
+    PLAYGROUND_CUSTOM_ID,
+    PLAYGROUND_MONACO_OPTIONS,
+    THEMES,
+  } from './config/playground'
+  import type { RenderMode } from './types/playground'
 
-  const PLAYGROUND_CUSTOM_ID = 'playground-demo'
-  const PLAYGROUND_CUSTOM_HTML_TAGS = ['thinking'] as const
-  const themes = [
-    'andromeeda',
-    'aurora-x',
-    'ayu-dark',
-    'catppuccin-frappe',
-    'catppuccin-latte',
-    'catppuccin-macchiato',
-    'catppuccin-mocha',
-    'dark-plus',
-    'dracula',
-    'github-dark',
-    'github-light',
-    'gruvbox-dark-medium',
-    'gruvbox-light-medium',
-    'material-theme',
-    'min-dark',
-    'min-light',
-    'monokai',
-    'night-owl',
-    'one-dark-pro',
-    'one-light',
-    'rose-pine',
-    'rose-pine-dawn',
-    'tokyo-night',
-    'vitesse-dark',
-    'vitesse-light',
-  ]
+  const themes = [...THEMES]
 
-  const diffHideUnchangedRegions = {
-    enabled: true,
-    contextLineCount: 2,
-    minimumLineCount: 4,
-    revealLineCount: 5,
-  } as const
-  const playgroundMonacoOptions = {
-    renderSideBySide: false,
-    useInlineViewWhenSpaceIsLimited: true,
-    maxComputationTime: 0,
-    ignoreTrimWhitespace: false,
-    renderIndicators: true,
-    diffAlgorithm: 'legacy',
-    diffHideUnchangedRegions,
-    hideUnchangedRegions: diffHideUnchangedRegions,
-  } as const
+  function resolveSample(id: string | null) {
+    return TEST_LAB_SAMPLES.find(sample => sample.id === id)
+      ?? TEST_LAB_SAMPLES[0]!
+  }
 
-  setKaTeXWorker(new KatexWorker())
-  setMermaidWorker(new MermaidWorker())
-  if (typeof window !== 'undefined')
-    void preloadCodeBlockRuntime()
-  setCustomComponents(PLAYGROUND_CUSTOM_ID, {
-    thinking: ThinkingNode,
-  })
+  function resolveRenderMode(value: string | null): RenderMode {
+    if (value === 'markdown' || value === 'pre')
+      return value
+    return 'monaco'
+  }
 
-  let currentPath = normalizePath(window.location.pathname)
-  let content = ''
-  let isDark = window.localStorage.getItem('vueuse-color-scheme') === 'dark'
+  let currentPath = $state(normalizePath(window.location.pathname))
+  let content = $state('')
+  let isDark = $state(window.localStorage.getItem('vueuse-color-scheme') === 'dark'
     || (window.localStorage.getItem('vueuse-color-scheme') == null && window.matchMedia?.('(prefers-color-scheme: dark)').matches)
-  let selectedTheme = window.localStorage.getItem('vmr-settings-selected-theme') || 'vitesse-dark'
-  let chunkSizeMin = Number(window.localStorage.getItem('vmr-settings-stream-chunk-size-min') || 2)
-  let chunkSizeMax = Number(window.localStorage.getItem('vmr-settings-stream-chunk-size-max') || 7)
-  let chunkDelayMin = Number(window.localStorage.getItem('vmr-settings-stream-delay-min') || 14)
-  let chunkDelayMax = Number(window.localStorage.getItem('vmr-settings-stream-delay-max') || 34)
-  let burstiness = Number(window.localStorage.getItem('vmr-settings-stream-burstiness') || 35)
-  let isStreaming = false
-  let isPaused = false
+  )
+  let selectedTheme = $state<PlaygroundTheme>(
+    THEMES.find(theme => theme === window.localStorage.getItem('vmr-settings-selected-theme'))
+      ?? 'vitesse-dark',
+  )
+  let chunkSizeMin = $state(Number(window.localStorage.getItem('vmr-settings-stream-chunk-size-min') || 2))
+  let chunkSizeMax = $state(Number(window.localStorage.getItem('vmr-settings-stream-chunk-size-max') || 7))
+  let chunkDelayMin = $state(Number(window.localStorage.getItem('vmr-settings-stream-delay-min') || 14))
+  let chunkDelayMax = $state(Number(window.localStorage.getItem('vmr-settings-stream-delay-max') || 34))
+  let burstiness = $state(Number(window.localStorage.getItem('vmr-settings-stream-burstiness') || 35))
+  let isStreaming = $state(false)
+  let isPaused = $state(false)
   let timer: number | null = null
   let cursor = 0
-  let sampleId = window.localStorage.getItem('vmr-test-sample') || TEST_LAB_SAMPLES[0].id
-  let testInput = (TEST_LAB_SAMPLES.find(sample => sample.id === sampleId) || TEST_LAB_SAMPLES[0]).content
-  let testStreamContent = ''
+  const initialSample = resolveSample(window.localStorage.getItem('vmr-test-sample'))
+  let sampleId = $state<TestLabSampleId>(initialSample.id)
+  let testInput = $state(initialSample.content)
+  let testStreamContent = $state('')
   let testCursor = 0
   let testTimer: number | null = null
-  let isTestStreaming = false
-  let isTestPaused = false
-  let renderMode = (window.localStorage.getItem('vmr-test-render-mode') || 'monaco') as 'monaco' | 'markdown' | 'pre'
-  let codeBlockStream = window.localStorage.getItem('vmr-test-code-stream') !== 'false'
-  let viewportPriority = window.localStorage.getItem('vmr-test-viewport-priority') !== 'false'
-  let batchRendering = window.localStorage.getItem('vmr-test-batch-rendering') !== 'false'
-  let typewriter = window.localStorage.getItem('vmr-test-typewriter') !== 'false'
-  let mathEnabled = window.localStorage.getItem('vmr-test-math-enabled') !== 'false'
-  let mermaidEnabled = window.localStorage.getItem('vmr-test-mermaid-enabled') !== 'false'
-  let messagesContainer: HTMLElement | null = null
+  let isTestStreaming = $state(false)
+  let isTestPaused = $state(false)
+  let renderMode = $state<RenderMode>(resolveRenderMode(window.localStorage.getItem('vmr-test-render-mode')))
+  let codeBlockStream = $state(window.localStorage.getItem('vmr-test-code-stream') !== 'false')
+  let batchRendering = $state(window.localStorage.getItem('vmr-test-batch-rendering') !== 'false')
+  let typewriter = $state(window.localStorage.getItem('vmr-test-typewriter') !== 'false')
+  let mathEnabled = $state(window.localStorage.getItem('vmr-test-math-enabled') !== 'false')
+  let mermaidEnabled = $state(window.localStorage.getItem('vmr-test-mermaid-enabled') !== 'false')
+  let messagesContainer = $state<HTMLElement | null>(null)
   let roContainer: ResizeObserver | null = null
   let roContent: ResizeObserver | null = null
   let moMessages: MutationObserver | null = null
@@ -113,57 +79,90 @@
   let homepageProgrammaticScroll = false
   let homepageAutoScrollFrame: number | null = null
   let homepageAutoScrollFollowupFrame: number | null = null
-  const markdownModeComponents = { code_block: MarkdownCodeBlockNode }
-  $: activeSample = TEST_LAB_SAMPLES.find(sample => sample.id === sampleId) || TEST_LAB_SAMPLES[0]
-  $: testPreviewContent = isTestStreaming ? testStreamContent : testInput
-  $: testStreamProgress = testInput.length ? Math.min(100, Math.round((testPreviewContent.length / testInput.length) * 100)) : 0
-  $: document.documentElement.classList.toggle('dark', isDark)
-  $: window.localStorage.setItem('vueuse-color-scheme', isDark ? 'dark' : 'light')
-  $: window.localStorage.setItem('vmr-settings-selected-theme', selectedTheme)
-  $: window.localStorage.setItem('vmr-test-render-mode', renderMode)
-  $: window.localStorage.setItem('vmr-test-code-stream', String(codeBlockStream))
-  $: window.localStorage.setItem('vmr-test-viewport-priority', String(viewportPriority))
-  $: window.localStorage.setItem('vmr-test-batch-rendering', String(batchRendering))
-  $: window.localStorage.setItem('vmr-test-typewriter', String(typewriter))
-  $: window.localStorage.setItem('vmr-test-math-enabled', String(mathEnabled))
-  $: window.localStorage.setItem('vmr-test-mermaid-enabled', String(mermaidEnabled))
-  $: mathEnabled ? enableKatex() : disableKatex()
-  $: mermaidEnabled ? enableMermaid() : disableMermaid()
-  $: streamChunkRangeLabel = Math.min(chunkSizeMin, chunkSizeMax) + '-' + Math.max(chunkSizeMin, chunkSizeMax)
-  $: streamDelayRangeLabel = Math.min(chunkDelayMin, chunkDelayMax) + '-' + Math.max(chunkDelayMin, chunkDelayMax) + 'ms'
-  $: currentTitle = currentPath === '/test' ? 'markstream-svelte test lab' : 'markstream-svelte'
-  $: renderModeLabel = renderMode === 'markdown' ? 'MarkdownCodeBlock' : renderMode === 'pre' ? 'PreCodeNode' : 'Monaco'
-  $: activeRenderModeLabel = currentPath === '/test' ? renderModeLabel : 'Monaco'
-  $: if (currentPath !== '/test' && content.length !== previousContentLength) {
-    previousContentLength = content.length
-    const shouldStickToBottom = homepagePinnedToBottom || isHomepageAtBottom()
-    homepagePinnedToBottom = shouldStickToBottom
-    tick().then(() => {
-      scheduleCheckMinHeight()
-      scheduleHomepageAutoScroll(shouldStickToBottom)
-    })
-  }
-
-  onMount(() => {
-    window.addEventListener('popstate', syncPath)
-    window.addEventListener('scroll', updateHomepagePinnedState, { passive: true })
-    window.addEventListener('wheel', handleHomepageWheel, { passive: true })
-    if (currentPath !== '/test') {
-      startStream()
-      tick().then(observeHomepageMessages)
-    }
-    return () => {
-      window.removeEventListener('popstate', syncPath)
-      window.removeEventListener('scroll', updateHomepagePinnedState)
-      window.removeEventListener('wheel', handleHomepageWheel)
-    }
+  const markdownModeComponents = {
+    code_block: CodeBlockNode,
+  } satisfies RendererCustomComponentMap
+  const activeSample = $derived(resolveSample(sampleId))
+  const testPreviewContent = $derived(isTestStreaming ? testStreamContent : testInput)
+  const testStreamProgress = $derived(testInput.length ? Math.min(100, Math.round((testPreviewContent.length / testInput.length) * 100)) : 0)
+  const streamChunkRangeLabel = $derived(`${Math.min(chunkSizeMin, chunkSizeMax)}-${Math.max(chunkSizeMin, chunkSizeMax)}`)
+  const streamDelayRangeLabel = $derived(`${Math.min(chunkDelayMin, chunkDelayMax)}-${Math.max(chunkDelayMin, chunkDelayMax)}ms`)
+  const currentTitle = $derived(currentPath === '/test' ? 'markstream-svelte test lab' : 'markstream-svelte')
+  const renderModeLabel = $derived(renderMode === 'markdown' ? 'CodeBlock component' : renderMode === 'pre' ? 'PreCodeNode' : 'Monaco')
+  const activeRenderModeLabel = $derived(currentPath === '/test' ? renderModeLabel : 'Monaco')
+  const homeCodeBlockProps: NodeRendererCodeBlockProps = $derived({
+    stream: true,
+    darkTheme: selectedTheme,
+    lightTheme: selectedTheme,
+    monacoOptions: PLAYGROUND_MONACO_OPTIONS,
+    themes,
+  })
+  const testCodeBlockProps: NodeRendererCodeBlockProps = $derived({
+    stream: codeBlockStream,
+    darkTheme: selectedTheme,
+    lightTheme: selectedTheme,
+    monacoOptions: PLAYGROUND_MONACO_OPTIONS,
+    themes,
   })
 
-  onDestroy(() => {
-    stopStream()
-    stopTestStream()
-    disconnectHomepageObservers()
-    cancelHomepageAutoScroll()
+  $effect(() => {
+    document.documentElement.classList.toggle('dark', isDark)
+    window.localStorage.setItem('vueuse-color-scheme', isDark ? 'dark' : 'light')
+    window.localStorage.setItem('vmr-settings-selected-theme', selectedTheme)
+    window.localStorage.setItem('vmr-settings-stream-chunk-size-min', String(chunkSizeMin))
+    window.localStorage.setItem('vmr-settings-stream-chunk-size-max', String(chunkSizeMax))
+    window.localStorage.setItem('vmr-settings-stream-delay-min', String(chunkDelayMin))
+    window.localStorage.setItem('vmr-settings-stream-delay-max', String(chunkDelayMax))
+    window.localStorage.setItem('vmr-settings-stream-burstiness', String(burstiness))
+    window.localStorage.setItem('vmr-test-render-mode', renderMode)
+    window.localStorage.setItem('vmr-test-code-stream', String(codeBlockStream))
+    window.localStorage.setItem('vmr-test-batch-rendering', String(batchRendering))
+    window.localStorage.setItem('vmr-test-typewriter', String(typewriter))
+    window.localStorage.setItem('vmr-test-math-enabled', String(mathEnabled))
+    window.localStorage.setItem('vmr-test-mermaid-enabled', String(mermaidEnabled))
+  })
+
+  $effect(() => {
+    if (mathEnabled)
+      katexRuntime.enable()
+    else
+      katexRuntime.disable()
+  })
+
+  $effect(() => {
+    if (mermaidEnabled)
+      mermaidRuntime.enable()
+    else
+      mermaidRuntime.disable()
+  })
+
+  $effect(() => {
+    const contentLength = content.length
+    const path = currentPath
+    untrack(() => {
+      if (path === '/test' || contentLength === previousContentLength)
+        return
+      previousContentLength = contentLength
+      const shouldStickToBottom = homepagePinnedToBottom || isHomepageAtBottom()
+      homepagePinnedToBottom = shouldStickToBottom
+      void tick().then(() => {
+        scheduleCheckMinHeight()
+        scheduleHomepageAutoScroll(shouldStickToBottom)
+      })
+    })
+  })
+
+  onMount(() => {
+    if (currentPath !== '/test') {
+      startStream()
+      void tick().then(observeHomepageMessages)
+    }
+    return () => {
+      stopStream()
+      stopTestStream()
+      disconnectHomepageObservers()
+      cancelHomepageAutoScroll()
+    }
   })
 
   function normalizePath(pathname: string) {
@@ -180,7 +179,7 @@
     }
     else {
       homepagePinnedToBottom = true
-      tick().then(observeHomepageMessages)
+      void tick().then(observeHomepageMessages)
     }
     if (currentPath !== '/test' && !isStreaming)
       startStream()
@@ -209,7 +208,7 @@
     isPaused = false
     isStreaming = true
     scheduleNextChunk()
-    tick().then(observeHomepageMessages)
+    void tick().then(observeHomepageMessages)
   }
 
   function stopStream() {
@@ -251,13 +250,13 @@
   }
 
   function applySelectedSample() {
-    const nextSample = TEST_LAB_SAMPLES.find(sample => sample.id === sampleId) || TEST_LAB_SAMPLES[0]
+    const nextSample = resolveSample(sampleId)
     stopTestStream()
     testInput = nextSample.content
     window.localStorage.setItem('vmr-test-sample', sampleId)
   }
 
-  function chooseSample(id: string) {
+  function chooseSample(id: TestLabSampleId) {
     sampleId = id
     applySelectedSample()
   }
@@ -315,10 +314,10 @@
   }
 
   function isHomepageAtBottom(threshold = 64) {
-    const scrollRoot = document.scrollingElement
+    const scrollRoot = messagesContainer
     if (!scrollRoot)
       return true
-    return scrollRoot.scrollHeight - scrollRoot.clientHeight - scrollRoot.scrollTop <= threshold
+    return Math.abs(scrollRoot.scrollTop) <= threshold
   }
 
   function updateHomepagePinnedState() {
@@ -345,11 +344,11 @@
   function applyHomepageAutoScroll() {
     if (!homepagePinnedToBottom || currentPath === '/test')
       return
-    const scrollRoot = document.scrollingElement
+    const scrollRoot = messagesContainer
     if (!scrollRoot)
       return
     homepageProgrammaticScroll = true
-    scrollRoot.scrollTop = scrollRoot.scrollHeight
+    scrollRoot.scrollTo({ behavior: 'instant', top: 0 })
     homepagePinnedToBottom = true
     window.requestAnimationFrame(() => {
       homepageProgrammaticScroll = false
@@ -476,6 +475,8 @@
   }
 </script>
 
+<svelte:window onpopstate={syncPath} />
+
 <div class:dark={isDark} class="playground-root playground-shell">
   <div class="playground-bg">
     <div class="playground-bg__orb playground-bg__orb--1"></div>
@@ -597,12 +598,11 @@
               Render
               <select bind:value={renderMode}>
                 <option value="monaco">Monaco</option>
-                <option value="markdown">MarkdownCodeBlock</option>
+                <option value="markdown">CodeBlock component</option>
                 <option value="pre">PreCodeNode</option>
               </select>
             </label>
             <label class="toggle-item"><input type="checkbox" bind:checked={codeBlockStream} /> Code stream</label>
-            <label class="toggle-item"><input type="checkbox" bind:checked={viewportPriority} /> viewportPriority</label>
             <label class="toggle-item"><input type="checkbox" bind:checked={batchRendering} /> batchRendering</label>
             <label class="toggle-item"><input type="checkbox" bind:checked={typewriter} /> typewriter</label>
             <label class="toggle-item"><input type="checkbox" bind:checked={mathEnabled} /> KaTeX</label>
@@ -638,22 +638,17 @@
             <MarkdownRender
               content={testPreviewContent}
               final={!isTestStreaming}
-              codeBlockStream={codeBlockStream}
-              codeBlockDarkTheme={selectedTheme}
-              codeBlockLightTheme={selectedTheme}
-              codeBlockMonacoOptions={playgroundMonacoOptions}
+              smoothStreaming={isTestStreaming ? 'auto' : false}
+              fade={!isTestStreaming}
+              typewriter={isTestStreaming && typewriter}
+              codeBlockProps={testCodeBlockProps}
               renderCodeBlocksAsPre={renderMode === 'pre'}
               customComponents={renderMode === 'markdown' ? markdownModeComponents : undefined}
-              {themes}
               {isDark}
               customId={PLAYGROUND_CUSTOM_ID}
               customHtmlTags={PLAYGROUND_CUSTOM_HTML_TAGS}
-              deferNodesUntilVisible={!viewportPriority}
-              {viewportPriority}
               {batchRendering}
-              {typewriter}
               maxLiveNodes={2000}
-              liveNodeBuffer={200}
             />
           </div>
         </div>
@@ -708,27 +703,21 @@
           </div>
         </section>
 
-        <main bind:this={messagesContainer} class="chat-messages chatbot-messages">
+        <main bind:this={messagesContainer} class="chat-messages chatbot-messages" onscroll={updateHomepagePinnedState} onwheel={handleHomepageWheel}>
           <MarkdownRender
             className="chat-messages__content"
             {content}
             final={!isStreaming}
-            codeBlockStream={true}
-            codeBlockDarkTheme={selectedTheme}
-            codeBlockLightTheme={selectedTheme}
-            codeBlockMonacoOptions={playgroundMonacoOptions}
+            smoothStreaming={isStreaming ? 'auto' : false}
+            fade={!isStreaming}
+            typewriter={isStreaming && typewriter}
+            codeBlockProps={homeCodeBlockProps}
             renderCodeBlocksAsPre={false}
-            customComponents={undefined}
-            {themes}
             {isDark}
             customId={PLAYGROUND_CUSTOM_ID}
             customHtmlTags={PLAYGROUND_CUSTOM_HTML_TAGS}
-            deferNodesUntilVisible={!viewportPriority}
-            {viewportPriority}
             {batchRendering}
-            {typewriter}
             maxLiveNodes={2000}
-            liveNodeBuffer={200}
           />
         </main>
       </div>

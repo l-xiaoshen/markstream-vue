@@ -34,8 +34,10 @@ pnpm add markstream-svelte svelte@^5
 
 <MarkdownRender
   {content}
-  codeBlockDarkTheme="vitesse-dark"
-  codeBlockLightTheme="vitesse-light"
+  codeBlockProps={{
+    darkTheme: 'vitesse-dark',
+    lightTheme: 'vitesse-light',
+  }}
 />
 ```
 
@@ -79,22 +81,24 @@ KaTeX 和 Mermaid worker 入口与其它框架一致：
 
 ```svelte
 <script lang="ts">
+  import type {
+    CustomMarkdownNode,
+    MarkstreamCustomComponentProps,
+  } from 'markstream-svelte'
   import MarkdownRender from 'markstream-svelte'
 
   let {
     node,
-    customId = undefined,
-  }: {
-    node: any
-    customId?: string
-  } = $props()
+    context = undefined,
+  }: MarkstreamCustomComponentProps<
+    CustomMarkdownNode<'thinking'>
+  > = $props()
 </script>
 
 <section class="thinking-node">
   <MarkdownRender
-    content={String(node?.content ?? '')}
-    {customId}
-    customHtmlTags={['thinking']}
+    content={node.content}
+    {context}
   />
 </section>
 ```

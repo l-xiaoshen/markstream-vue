@@ -26,13 +26,20 @@ describe('cross-package security defaults', () => {
   })
 
   it('keeps Mermaid SVG mounting sanitized across loose-mode paths', () => {
+    const svelteMermaidRenderingSource = source('packages/markstream-svelte/src/utils/rendering/mermaid.ts')
+    const svelteMermaidRendererSource = source('packages/markstream-svelte/src/state/blocks/MermaidRenderer.svelte.ts')
+    const svelteMermaidEnhancerSource = source('packages/markstream-svelte/src/enhancers/mermaid.ts')
+
     expect(source('packages/markstream-react/src/components/MermaidBlockNode/MermaidBlockNode.tsx')).toContain('const rendered = setSafeSvg(target, svg)')
     expect(source('packages/markstream-react/src/components/MermaidBlockNode/MermaidBlockNode.tsx')).not.toContain('target.insertAdjacentHTML(\'afterbegin\', svg)')
     expect(source('packages/markstream-vue2/src/components/MermaidBlockNode/MermaidBlockNode.vue')).toContain('const rendered = setSafeSvg(target, svg)')
     expect(source('packages/markstream-vue2/src/components/MermaidBlockNode/MermaidBlockNode.vue')).not.toContain('target.insertAdjacentHTML(\'afterbegin\', svg)')
-    expect(source('packages/markstream-svelte/src/components/MermaidBlockNode.svelte')).toContain('toSafeMermaidSvgMarkup(rawSvg)')
+    expect(svelteMermaidRenderingSource).toContain('const safeSvg = toSafeMermaidSvgMarkup(rawSvg)')
+    expect(svelteMermaidRenderingSource).toContain('svgMarkup: safeSvg')
+    expect(svelteMermaidRendererSource).toContain('const result = await renderMermaidSvg(job.snapshot)')
+    expect(svelteMermaidEnhancerSource).toContain('const rendered = await renderMermaidSvg({')
+    expect(svelteMermaidEnhancerSource).toContain('shell.body.innerHTML = rendered.svgMarkup')
     expect(source('packages/markstream-angular/src/enhanceRenderedHtml.ts')).toContain('toSafeMermaidSvgMarkup(svg)')
-    expect(source('packages/markstream-svelte/src/enhanceRenderedHtml.ts')).toContain('toSafeMermaidSvgMarkup(svg)')
   })
 
   it('gates Mermaid bindFunctions across component and static enhancer paths', () => {
@@ -48,9 +55,13 @@ describe('cross-package security defaults', () => {
     expect(angularMermaidSource).toContain('this.bindMermaidInteractions(this.modalHost?.nativeElement)')
     expect(source('packages/markstream-angular/src/enhanceRenderedHtml.ts')).toContain('options.mermaidProps?.enableMermaidInteractions === true')
     const svelteMermaidSource = source('packages/markstream-svelte/src/components/MermaidBlockNode.svelte')
-    expect(svelteMermaidSource).toContain('if (enableMermaidInteractions')
-    expect(svelteMermaidSource).toContain('bind:this={modalHost}')
-    expect(source('packages/markstream-svelte/src/enhanceRenderedHtml.ts')).toContain('options.mermaidProps?.enableMermaidInteractions === true')
+    const svelteMermaidStateSource = source('packages/markstream-svelte/src/state/blocks/MermaidBlockState.svelte.ts')
+    const svelteMermaidEnhancerSource = source('packages/markstream-svelte/src/enhancers/mermaid.ts')
+    expect(svelteMermaidStateSource).toContain('this.#options.enableMermaidInteractions === true')
+    expect(svelteMermaidStateSource).toContain('this.renderer.bindInteractions(preview)')
+    expect(svelteMermaidStateSource).toContain('this.renderer.bindInteractions(modal)')
+    expect(svelteMermaidSource).toContain('onContentElement={(element) => block.setModalHost(element)}')
+    expect(svelteMermaidEnhancerSource).toContain('options.mermaidProps?.enableMermaidInteractions === true')
   })
 
   it('defaults HTML preview sandboxes to least privilege across framework packages', () => {

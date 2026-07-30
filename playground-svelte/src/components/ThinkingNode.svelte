@@ -1,32 +1,24 @@
 <script lang="ts">
-  import MarkdownRender from 'markstream-svelte'
+  import MarkdownRender, {
+    type MarkstreamCustomComponentProps,
+  } from 'markstream-svelte'
+  import type { ThinkingNodeData } from '../types/playground'
 
   let {
     node,
-    customId = undefined,
-    isDark = false,
-    typewriter = true,
-  }: {
-    node: any
-    customId?: string
-    isDark?: boolean
-    typewriter?: boolean
-  } = $props()
+    context = undefined,
+  }: MarkstreamCustomComponentProps<
+    ThinkingNodeData
+  > = $props()
 </script>
 
 <section class="thinking-node">
   <header class="thinking-node__header">Thinking</header>
   <div class="thinking-node__body">
     <MarkdownRender
-      content={String(node?.content ?? '')}
-      {customId}
-      {isDark}
-      {typewriter}
-      customHtmlTags={['thinking']}
-      viewportPriority={false}
-      deferNodesUntilVisible={false}
-      batchRendering={false}
-      maxLiveNodes={0}
+      content={node.content}
+      final={context?.final ?? node.loading === false}
+      {context}
     />
   </div>
 </section>

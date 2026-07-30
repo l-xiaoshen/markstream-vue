@@ -1,20 +1,33 @@
 <script lang="ts">
-  import type { SvelteRenderableNode, SvelteRenderContext } from './shared/node-helpers'
+  import type {
+    EmphasisNode,
+    HighlightNode,
+    InsertNode,
+    StrikethroughNode,
+    StrongNode,
+    SubscriptNode,
+    SuperscriptNode,
+  } from 'stream-markdown-parser'
+  import type { NodeProps } from '../types/componentProps'
   import RenderChildren from './RenderChildren.svelte'
-  import { getNodeList } from './shared/node-helpers'
 
-  type Props = {
-    node: SvelteRenderableNode
-    context?: SvelteRenderContext
-    indexKey?: string | number
-    tag?: string
-  };
+  type InlineContainerNode
+    = | StrongNode
+      | EmphasisNode
+      | StrikethroughNode
+      | HighlightNode
+      | InsertNode
+      | SubscriptNode
+      | SuperscriptNode
+
   let {
     node,
     context = undefined,
     indexKey = undefined,
     tag = 'span'
-  }: Props = $props()
+  }: NodeProps<InlineContainerNode> & {
+    tag?: string
+  } = $props()
 </script>
 
-<svelte:element this={tag}><RenderChildren nodes={getNodeList((node as any)?.children)} {context} prefix={String(indexKey ?? tag) + '-' + tag} /></svelte:element>
+<svelte:element this={tag}><RenderChildren nodes={node.children} {context} prefix={String(indexKey ?? tag) + '-' + tag} /></svelte:element>

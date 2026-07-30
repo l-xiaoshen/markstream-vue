@@ -177,10 +177,16 @@ async function main() {
       const messages = document.querySelector('.chat-messages.chatbot-messages')
       if (!wrapper || !container || !messages)
         return false
+      const wrapperStyle = getComputedStyle(wrapper)
+      const containerStyle = getComputedStyle(container)
       const messagesStyle = getComputedStyle(messages)
+      const containerRect = container.getBoundingClientRect()
       return messagesStyle.flexDirection === 'column-reverse'
-        && messagesStyle.overflowY === 'visible'
-        && container.getBoundingClientRect().width > 600
+        && messagesStyle.overflowY === 'auto'
+        && containerStyle.overflow === 'hidden'
+        && Math.abs(Number.parseFloat(wrapperStyle.height) - window.innerHeight) <= 1
+        && Math.abs(containerRect.height - (window.innerHeight - 40)) <= 1
+        && containerRect.width > 600
     }, null, { timeout: 10000 })
     await page.waitForFunction(() => {
       const container = document.querySelector('.chat-container')
@@ -193,74 +199,14 @@ async function main() {
       const settingsStyle = getComputedStyle(settings)
       const statStyle = getComputedStyle(stat)
       const toggleRect = toggle.getBoundingClientRect()
-      return containerStyle.backgroundImage === 'none'
-        && containerStyle.boxShadow === 'none'
-        && settingsStyle.backgroundColor === 'rgba(0, 0, 0, 0)'
-        && statStyle.backgroundColor === 'rgba(0, 0, 0, 0)'
+      return containerStyle.borderRadius === '24px'
+        && settingsStyle.width === '280px'
+        && statStyle.borderRadius === '14px'
         && Math.abs(toggleRect.width - 48) <= 1
         && Math.abs(toggleRect.height - 26) <= 1
     }, null, { timeout: 10000 })
     await page.waitForFunction(() => document.querySelectorAll('.chatbot-messages > .markstream-svelte .node-slot').length > 0, null, { timeout: 15000 })
     await page.waitForFunction(selector => document.querySelector(selector)?.textContent?.includes('packages/'), homeRendererSelector, { timeout: 30000 })
-    await page.waitForFunction(() => {
-      const scrollRoot = document.scrollingElement
-      return scrollRoot
-        && scrollRoot.scrollHeight - scrollRoot.clientHeight > 1000
-        && document.querySelector('.chat-header__meta')?.textContent?.includes('Streaming')
-    }, null, { timeout: 15000 })
-    await page.evaluate(() => window.scrollTo(0, document.scrollingElement.scrollHeight))
-    await page.waitForFunction(() => {
-      const scrollRoot = document.scrollingElement
-      return scrollRoot && scrollRoot.scrollHeight - scrollRoot.clientHeight - scrollRoot.scrollTop <= 80
-    }, null, { timeout: 5000 })
-    const bottomPinnedBefore = await page.evaluate(() => {
-      const scrollRoot = document.scrollingElement
-      return {
-        scrollHeight: scrollRoot.scrollHeight,
-        bottomGap: scrollRoot.scrollHeight - scrollRoot.clientHeight - scrollRoot.scrollTop,
-      }
-    })
-    await page.waitForTimeout(900)
-    const bottomPinnedAfter = await page.evaluate(() => {
-      const scrollRoot = document.scrollingElement
-      return {
-        scrollHeight: scrollRoot.scrollHeight,
-        bottomGap: scrollRoot.scrollHeight - scrollRoot.clientHeight - scrollRoot.scrollTop,
-      }
-    })
-    if (bottomPinnedAfter.scrollHeight <= bottomPinnedBefore.scrollHeight + 80)
-      throw new Error('Homepage stream did not grow during bottom pinning probe')
-    if (bottomPinnedAfter.bottomGap > 96)
-      throw new Error(`Homepage should remain pinned at bottom while streaming: ${JSON.stringify({ bottomPinnedBefore, bottomPinnedAfter })}`)
-    const manualScrollBefore = await page.evaluate(() => window.scrollY)
-    const manualScrollProbe = await page.evaluate(() => {
-      window.dispatchEvent(new WheelEvent('wheel', { deltaY: -500 }))
-      window.scrollBy(0, -500)
-      return window.scrollY
-    })
-    if (manualScrollProbe >= manualScrollBefore - 120)
-      throw new Error(`Homepage manual scroll probe did not move upward: ${manualScrollBefore} -> ${manualScrollProbe}`)
-    await page.waitForTimeout(900)
-    const manualScrollAfter = await page.evaluate(() => window.scrollY)
-    if (Math.abs(manualScrollAfter - manualScrollProbe) > 32)
-      throw new Error(`Homepage manual scroll should not be pulled back while streaming: ${manualScrollProbe} -> ${manualScrollAfter}`)
-    await page.evaluate(() => window.scrollTo(0, document.scrollingElement.scrollHeight))
-    await page.waitForFunction(() => {
-      const scrollRoot = document.scrollingElement
-      return scrollRoot && scrollRoot.scrollHeight - scrollRoot.clientHeight - scrollRoot.scrollTop <= 96
-    }, null, { timeout: 5000 })
-    await page.waitForFunction(() => window.__markstreamSvelteMermaidWorkerMessages?.some(item => item.action === 'canParse'), null, { timeout: 30000 })
-    await page.waitForFunction((selector) => {
-      const root = document.querySelector(selector)
-      if (!root)
-        return false
-      const visibleCodeBlocks = Array.from(root.querySelectorAll('pre[data-markstream-code-block="1"], .code-block-container[data-markstream-code-block="1"]'))
-        .filter((node) => {
-          const rect = node.getBoundingClientRect()
-          return rect.width > 0 && rect.height > 0
-        })
-      return visibleCodeBlocks.length > 0 && visibleCodeBlocks.every(node => (node.textContent || '').trim().length > 0)
-    }, homeRendererSelector, { timeout: 15000 })
     await page.waitForFunction((selector) => {
       if (document.querySelector('.chat-header__meta')?.textContent?.includes('Ready'))
         return false
@@ -275,6 +221,75 @@ async function main() {
           && !!block.querySelector('.monaco-editor, .monaco-diff-editor')
       })
     }, homeRendererSelector, { timeout: 30000 })
+    await page.waitForFunction(() => {
+      const scrollRoot = document.querySelector('.chat-messages.chatbot-messages')
+      return scrollRoot
+        && scrollRoot.scrollHeight - scrollRoot.clientHeight > 1000
+        && document.querySelector('.chat-header__meta')?.textContent?.includes('Streaming')
+    }, null, { timeout: 15000 })
+    await page.evaluate(() => {
+      const scrollRoot = document.querySelector('.chat-messages.chatbot-messages')
+      if (scrollRoot)
+        scrollRoot.scrollTo({ behavior: 'instant', top: 0 })
+    })
+    await page.waitForFunction(() => {
+      const scrollRoot = document.querySelector('.chat-messages.chatbot-messages')
+      return scrollRoot && Math.abs(scrollRoot.scrollTop) <= 1
+    }, null, { timeout: 5000 })
+    const bottomPinnedBefore = await page.evaluate(() => {
+      const scrollRoot = document.querySelector('.chat-messages.chatbot-messages')
+      return {
+        scrollHeight: scrollRoot.scrollHeight,
+        bottomGap: Math.abs(scrollRoot.scrollTop),
+      }
+    })
+    await page.waitForTimeout(900)
+    const bottomPinnedAfter = await page.evaluate(() => {
+      const scrollRoot = document.querySelector('.chat-messages.chatbot-messages')
+      return {
+        scrollHeight: scrollRoot.scrollHeight,
+        bottomGap: Math.abs(scrollRoot.scrollTop),
+      }
+    })
+    if (bottomPinnedAfter.scrollHeight <= bottomPinnedBefore.scrollHeight + 80)
+      throw new Error('Homepage stream did not grow during bottom pinning probe')
+    if (bottomPinnedAfter.bottomGap > 96)
+      throw new Error(`Homepage should remain pinned at bottom while streaming: ${JSON.stringify({ bottomPinnedBefore, bottomPinnedAfter })}`)
+    const manualScrollBefore = await page.evaluate(() => document.querySelector('.chat-messages.chatbot-messages').scrollTop)
+    await page.evaluate(() => {
+      const scrollRoot = document.querySelector('.chat-messages.chatbot-messages')
+      scrollRoot.dispatchEvent(new WheelEvent('wheel', { bubbles: true, deltaY: -500 }))
+      scrollRoot.scrollTo({ behavior: 'instant', top: -500 })
+    })
+    await page.waitForFunction(() => document.querySelector('.chat-messages.chatbot-messages')?.scrollTop < -120, null, { timeout: 5000 })
+    const manualScrollProbe = await page.evaluate(() => document.querySelector('.chat-messages.chatbot-messages').scrollTop)
+    if (manualScrollProbe >= manualScrollBefore - 120)
+      throw new Error(`Homepage manual scroll probe did not move upward: ${manualScrollBefore} -> ${manualScrollProbe}`)
+    await page.waitForTimeout(900)
+    const manualScrollAfter = await page.evaluate(() => document.querySelector('.chat-messages.chatbot-messages').scrollTop)
+    if (Math.abs(manualScrollAfter - manualScrollProbe) > 32)
+      throw new Error(`Homepage manual scroll should not be pulled back while streaming: ${manualScrollProbe} -> ${manualScrollAfter}`)
+    await page.evaluate(() => {
+      const scrollRoot = document.querySelector('.chat-messages.chatbot-messages')
+      if (scrollRoot)
+        scrollRoot.scrollTo({ behavior: 'instant', top: 0 })
+    })
+    await page.waitForFunction(() => {
+      const scrollRoot = document.querySelector('.chat-messages.chatbot-messages')
+      return scrollRoot && Math.abs(scrollRoot.scrollTop) <= 1
+    }, null, { timeout: 5000 })
+    await page.waitForFunction(() => window.__markstreamSvelteMermaidWorkerMessages?.some(item => item.action === 'canParse'), null, { timeout: 30000 })
+    await page.waitForFunction((selector) => {
+      const root = document.querySelector(selector)
+      if (!root)
+        return false
+      const visibleCodeBlocks = Array.from(root.querySelectorAll('pre[data-markstream-code-block="1"], .code-block-container[data-markstream-code-block="1"]'))
+        .filter((node) => {
+          const rect = node.getBoundingClientRect()
+          return rect.width > 0 && rect.height > 0
+        })
+      return visibleCodeBlocks.length > 0 && visibleCodeBlocks.every(node => (node.textContent || '').trim().length > 0)
+    }, homeRendererSelector, { timeout: 15000 })
     await page.waitForFunction((selector) => {
       if (!document.querySelector('.chat-header__meta')?.textContent?.includes('Ready'))
         return false
@@ -316,17 +331,17 @@ async function main() {
     if (collapsedHomeCodeBlocks.length > 0)
       throw new Error(`Home code block Monaco containers must fill their body: ${JSON.stringify(collapsedHomeCodeBlocks)}`)
     const scrollProbe = await page.evaluate(() => {
-      const scrollHeight = Math.max(document.documentElement.scrollHeight, document.body.scrollHeight)
-      const maxScrollTop = Math.max(0, scrollHeight - window.innerHeight)
-      const target = Math.max(0, maxScrollTop - 450)
-      window.scrollTo(0, target)
-      return { scrollY: window.scrollY, maxScrollTop }
+      const scrollRoot = document.querySelector('.chat-messages.chatbot-messages')
+      const scrollDistance = Math.max(0, scrollRoot.scrollHeight - scrollRoot.clientHeight)
+      const target = -Math.max(0, scrollDistance - 450)
+      scrollRoot.scrollTo({ behavior: 'instant', top: target })
+      return { scrollTop: scrollRoot.scrollTop, scrollDistance }
     })
-    if (scrollProbe.maxScrollTop > 1000) {
+    if (scrollProbe.scrollDistance > 1000) {
       await page.waitForTimeout(1200)
-      const scrollAfterProbe = await page.evaluate(() => window.scrollY)
-      if (Math.abs(scrollAfterProbe - scrollProbe.scrollY) > 24)
-        throw new Error(`Homepage scroll jumped after manual scroll: ${scrollProbe.scrollY} -> ${scrollAfterProbe}`)
+      const scrollAfterProbe = await page.evaluate(() => document.querySelector('.chat-messages.chatbot-messages').scrollTop)
+      if (Math.abs(scrollAfterProbe - scrollProbe.scrollTop) > 24)
+        throw new Error(`Homepage scroll jumped after manual scroll: ${scrollProbe.scrollTop} -> ${scrollAfterProbe}`)
     }
     await page.waitForFunction((selector) => {
       const root = document.querySelector(selector)

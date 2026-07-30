@@ -1,14 +1,10 @@
 <script lang="ts">
-  import type { SvelteRenderableNode } from './shared/node-helpers'
-  import { getString } from './shared/node-helpers'
+  import type { FootnoteReferenceNode as ParserFootnoteReferenceNode } from 'stream-markdown-parser'
+  import type { NodeProps } from '../types/componentProps'
 
-  interface Props {
-    node: SvelteRenderableNode
-  }
+  let { node }: NodeProps<ParserFootnoteReferenceNode> = $props()
 
-  let { node }: Props = $props()
-
-  let id = $derived(getString((node as any)?.id))
+  let id = $derived(node.id)
   let href = $derived(id ? `#fnref--${id}` : undefined)
   let linkAttrs = $derived(href ? { href } : {})
 

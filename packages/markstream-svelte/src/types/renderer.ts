@@ -1,0 +1,218 @@
+import type { SmoothMarkdownStreamOptions } from 'markstream-core'
+import type {
+  BaseNode,
+  HtmlPolicy,
+  MarkdownIt,
+  ParseOptions,
+} from 'stream-markdown-parser'
+import type { Component } from 'svelte'
+import type {
+  MarkstreamSvelteComponent,
+  RuntimeCustomComponentMap,
+  SuppliedCustomComponentProps,
+} from '../customComponents'
+import type {
+  CodeBlockMonacoOptions,
+  CodeBlockMonacoTheme,
+} from './monaco'
+import type { RenderableMarkdownNode } from './nodes'
+
+type ComponentMapForNodeUnion<
+  TNode extends BaseNode,
+> = {
+  [TType in TNode['type']]?: MarkstreamSvelteComponent<
+    SuppliedCustomComponentProps<Extract<TNode, { type: TType }>>
+  >
+}
+
+/**
+ * Renderer-local overrides are checked against built-in and caller-owned node
+ * discriminants. The string index also permits language aliases such as
+ * `javascript`, which are resolved from code blocks at runtime.
+ */
+export type RendererCustomComponentMap<
+  TCustomNode extends BaseNode = never,
+> = ComponentMapForNodeUnion<
+  RenderableMarkdownNode<TCustomNode>
+> & Partial<Record<string, Component<never>>>
+
+export interface CodeBlockPreviewPayload {
+  node: RenderableMarkdownNode<BaseNode>
+  artifactType: 'text/html' | 'image/svg+xml'
+  artifactTitle: string
+  id: string
+}
+
+export interface NodeRendererCodeBlockProps extends Record<string, unknown> {
+  stream?: boolean | undefined
+  darkTheme?: CodeBlockMonacoTheme | undefined
+  lightTheme?: CodeBlockMonacoTheme | undefined
+  themes?: CodeBlockMonacoTheme[] | undefined
+  monacoOptions?: CodeBlockMonacoOptions | undefined
+  minWidth?: string | number | undefined
+  maxWidth?: string | number | undefined
+  isShowPreview?: boolean | undefined
+  enableFontSizeControl?: boolean | undefined
+  showHeader?: boolean | undefined
+  showCopyButton?: boolean | undefined
+  showExpandButton?: boolean | undefined
+  showPreviewButton?: boolean | undefined
+  showCollapseButton?: boolean | undefined
+  showFontSizeButtons?: boolean | undefined
+  htmlPreviewAllowScripts?: boolean | undefined
+  htmlPreviewSandbox?: string | undefined
+}
+
+export interface NodeRendererImageProps {
+  fallbackSrc?: string | undefined
+  lazy?: boolean | undefined
+  usePlaceholder?: boolean | undefined
+}
+
+export interface NodeRendererMermaidProps extends Record<string, unknown> {
+  maxHeight?: string | null | undefined
+  estimatedPreviewHeightPx?: number | undefined
+  workerTimeoutMs?: number | undefined
+  parseTimeoutMs?: number | undefined
+  renderTimeoutMs?: number | undefined
+  fullRenderTimeoutMs?: number | undefined
+  renderDebounceMs?: number | undefined
+  showHeader?: boolean | undefined
+  showModeToggle?: boolean | undefined
+  showCopyButton?: boolean | undefined
+  showExportButton?: boolean | undefined
+  showFullscreenButton?: boolean | undefined
+  showCollapseButton?: boolean | undefined
+  showZoomControls?: boolean | undefined
+  isStrict?: boolean | undefined
+  enableMermaidInteractions?: boolean | undefined
+}
+
+export interface NodeRendererD2Props extends Record<string, unknown> {
+  maxHeight?: string | null | undefined
+  themeId?: number | null | undefined
+  darkThemeId?: number | null | undefined
+  renderDebounceMs?: number | undefined
+  showHeader?: boolean | undefined
+  showModeToggle?: boolean | undefined
+  showCopyButton?: boolean | undefined
+  showExportButton?: boolean | undefined
+  showFullscreenButton?: boolean | undefined
+  showCollapseButton?: boolean | undefined
+  showZoomControls?: boolean | undefined
+}
+
+export interface NodeRendererInfographicProps extends Record<string, unknown> {
+  maxHeight?: string | null | undefined
+  estimatedPreviewHeightPx?: number | undefined
+  renderDebounceMs?: number | undefined
+  showHeader?: boolean | undefined
+  showModeToggle?: boolean | undefined
+  showCopyButton?: boolean | undefined
+  showCollapseButton?: boolean | undefined
+  showExportButton?: boolean | undefined
+  showFullscreenButton?: boolean | undefined
+  showZoomControls?: boolean | undefined
+}
+
+export interface NodeRendererMathProps {
+  workerTimeoutMs?: number | undefined
+  workerWaitTimeoutMs?: number | undefined
+  workerRetries?: number | undefined
+}
+
+export interface NodeRendererEvents {
+  onCopy?: ((code: string) => void) | undefined
+  onHandleArtifactClick?: ((payload: CodeBlockPreviewPayload) => void) | undefined
+}
+
+/**
+ * Renderer configuration inherited by nested `NodeRenderer` instances.
+ */
+export interface NodeRendererOptions {
+  final?: boolean | undefined
+  parseOptions?: ParseOptions | undefined
+  customMarkdownIt?: ((md: MarkdownIt) => MarkdownIt) | undefined
+  debugPerformance?: boolean | undefined
+  customHtmlTags?: readonly string[] | undefined
+  htmlPolicy?: HtmlPolicy | undefined
+  /** @deprecated Use `codeBlockProps.stream` instead. */
+  codeBlockStream?: boolean | undefined
+  /** @deprecated Use `codeBlockProps.darkTheme` instead. */
+  codeBlockDarkTheme?: CodeBlockMonacoTheme | undefined
+  /** @deprecated Use `codeBlockProps.lightTheme` instead. */
+  codeBlockLightTheme?: CodeBlockMonacoTheme | undefined
+  /** @deprecated Use `codeBlockProps.monacoOptions` instead. */
+  codeBlockMonacoOptions?: CodeBlockMonacoOptions | undefined
+  renderCodeBlocksAsPre?: boolean | undefined
+  /** @deprecated Use `codeBlockProps.minWidth` instead. */
+  codeBlockMinWidth?: string | number | undefined
+  /** @deprecated Use `codeBlockProps.maxWidth` instead. */
+  codeBlockMaxWidth?: string | number | undefined
+  codeBlockProps?: NodeRendererCodeBlockProps | undefined
+  mermaidProps?: NodeRendererMermaidProps | undefined
+  d2Props?: NodeRendererD2Props | undefined
+  infographicProps?: NodeRendererInfographicProps | undefined
+  imageProps?: NodeRendererImageProps | undefined
+  mathProps?: NodeRendererMathProps | undefined
+  showTooltips?: boolean | undefined
+  /** @deprecated Use `codeBlockProps.themes` instead. */
+  themes?: CodeBlockMonacoTheme[] | undefined
+  isDark?: boolean | undefined
+  customId?: string | undefined
+  typewriter?: boolean | undefined
+  fade?: boolean | undefined
+  batchRendering?: boolean | undefined
+  initialRenderBatchSize?: number | undefined
+  renderBatchSize?: number | undefined
+  renderBatchDelay?: number | undefined
+  renderBatchBudgetMs?: number | undefined
+  renderBatchIdleTimeoutMs?: number | undefined
+  maxLiveNodes?: number | undefined
+  allowHtml?: boolean | undefined
+  smoothStreaming?: boolean | 'auto' | undefined
+  smoothStreamingOptions?: SmoothMarkdownStreamOptions | undefined
+}
+
+export interface NodeRendererProps<TCustomNode extends BaseNode = never>
+  extends NodeRendererOptions {
+  content?: string | undefined
+  nodes?: readonly RenderableMarkdownNode<TCustomNode>[] | null | undefined
+  context?: SvelteRenderContext | undefined
+  customComponents?: RendererCustomComponentMap<TCustomNode> | undefined
+  indexKey?: number | string | undefined
+  /** @deprecated This prop had no effect in `markstream-svelte` and is retained only for source compatibility. */
+  viewportPriority?: boolean | undefined
+  /** @deprecated This prop had no effect in `markstream-svelte` and is retained only for source compatibility. */
+  deferNodesUntilVisible?: boolean | undefined
+  /** @deprecated This prop had no effect in `markstream-svelte` and is retained only for source compatibility. */
+  liveNodeBuffer?: number | undefined
+}
+
+export type NodeRendererInput<TCustomNode extends BaseNode = never>
+  = Omit<NodeRendererProps<TCustomNode>, 'content' | 'nodes'>
+    & (
+      | {
+        content: string
+        nodes?: never
+      }
+      | {
+        content?: never
+        nodes: readonly RenderableMarkdownNode<TCustomNode>[]
+      }
+    )
+
+export interface SvelteRenderContext extends NodeRendererOptions {
+  /** @deprecated Use the `indexKey` component prop instead. */
+  indexKey?: string | undefined
+  /** @deprecated Internal render revisions should not be consumed by custom components. */
+  streamRenderVersion?: number | undefined
+  /** @deprecated Use `codeBlockProps` instead. */
+  codeBlockThemes?: Pick<
+    NodeRendererCodeBlockProps,
+    'themes' | 'darkTheme' | 'lightTheme' | 'monacoOptions' | 'minWidth' | 'maxWidth'
+  > | undefined
+  textStreamState?: Map<string, string> | undefined
+  customComponents?: RuntimeCustomComponentMap | undefined
+  events: NodeRendererEvents
+}

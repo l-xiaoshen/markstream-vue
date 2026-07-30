@@ -1,71 +1,75 @@
+/// <reference lib="webworker" />
+
+import type {
+  KaTeXWorkerRenderedResponse,
+  KaTeXWorkerRenderErrorResponse,
+  KaTeXWorkerRequest,
+  KaTeXWorkerUncaughtErrorResponse,
+} from '../types/runtimeWorkers'
 import katex from 'katex'
-import 'katex/dist/contrib/mhchem'
+import { toErrorMessage } from '../types/runtimeErrors'
+import 'katex/contrib/mhchem'
 
-interface MessageIn {
-  type?: 'init' | 'render'
-  id?: string
-  content?: string
-  displayMode?: boolean
-  debug?: boolean
+declare const self: DedicatedWorkerGlobalScope
+
+const state = {
+  debug: false,
 }
 
-interface MessageOut {
-  id: string
-  html?: string
-  error?: string
-}
-
-let debugWorker = false
-
-;(globalThis as any).addEventListener('message', (event: MessageEvent<MessageIn>) => {
-  const data = event.data || {}
+self.addEventListener('message', (event: MessageEvent<KaTeXWorkerRequest>) => {
+  const data = event.data
   if (data.type === 'init') {
-    debugWorker = !!data.debug
+    state.debug = data.debug
     return
   }
 
-  const id = data.id ?? ''
-  const content = data.content ?? ''
-  const displayMode = data.displayMode ?? true
-
   try {
-    if (debugWorker)
-      console.debug('[markstream-svelte:katexRenderer.worker] render start', { id, displayMode, content })
+    if (state.debug) {
+      console.debug('[markstream-svelte:katexRenderer.worker] render start', {
+        content: data.content,
+        displayMode: data.displayMode,
+        id: data.id,
+      })
+    }
 
-    const html = katex.renderToString(content, {
+    const html = katex.renderToString(data.content, {
       throwOnError: true,
-      displayMode,
+      displayMode: data.displayMode,
       output: 'html',
       strict: 'ignore',
     })
 
-    const result: MessageOut & { content: string, displayMode: boolean } = {
-      id,
+    const response: KaTeXWorkerRenderedResponse = {
+      type: 'rendered',
+      id: data.id,
       html,
-      content,
-      displayMode,
+      content: data.content,
+      displayMode: data.displayMode,
     }
-    ;(globalThis as any).postMessage(result)
+    self.postMessage(response)
   }
-  catch (error: any) {
-    const result: MessageOut & { content: string, displayMode: boolean } = {
-      id,
-      error: String(error?.message ?? error),
-      content,
-      displayMode,
+  catch (error: unknown) {
+    const response: KaTeXWorkerRenderErrorResponse = {
+      type: 'render-error',
+      id: data.id,
+      error: toErrorMessage(error),
+      content: data.content,
+      displayMode: data.displayMode,
     }
-    ;(globalThis as any).postMessage(result)
+    self.postMessage(response)
   }
 })
 
-;(globalThis as any).addEventListener('error', (event: ErrorEvent) => {
+self.addEventListener('error', (event: ErrorEvent) => {
   try {
-    ;(globalThis as any).postMessage({
+    const response: KaTeXWorkerUncaughtErrorResponse = {
+      type: 'worker-error',
       id: '__worker_uncaught__',
-      error: String(event.message ?? event.error),
+      error: event.message || toErrorMessage(event.error),
       content: '',
       displayMode: true,
-    })
+    }
+    self.postMessage(response)
   }
   catch {
     // Ignore postMessage failures while surfacing uncaught worker errors.

@@ -1,0 +1,232 @@
+.test-lab {
+  flex: 1;
+  display: grid;
+  grid-template-columns: minmax(280px, 420px) minmax(0, 1fr);
+  gap: 16px;
+  min-height: 0;
+}
+
+.workspace-card {
+  border-radius: 14px;
+  padding: 16px;
+  min-height: 0;
+  overflow: auto;
+}
+
+.workspace-card__head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+  margin-bottom: 14px;
+}
+
+.workspace-card__head h2 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.workspace-card__head p {
+  margin: 4px 0 0;
+  color: #64748b;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.mini-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 999px;
+  padding: 3px 9px;
+  background: rgba(248, 250, 252, 0.86);
+  color: #475569;
+  font-size: 11px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.dark .mini-pill {
+  background: rgba(38, 38, 38, 0.86);
+  color: #d4d4d4;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 12px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.field select {
+  min-height: 36px;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 8px;
+  padding: 7px 10px;
+  background: rgba(248, 250, 252, 0.9);
+  color: inherit;
+}
+
+.sample-list {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.sample-card {
+  display: grid;
+  gap: 4px;
+  width: 100%;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 10px;
+  padding: 10px 12px;
+  background: rgba(248, 250, 252, 0.76);
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.sample-card strong {
+  font-size: 13px;
+}
+
+.sample-card span {
+  color: #64748b;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.sample-card--active {
+  border-color: rgba(37, 99, 235, 0.48);
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.control-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 10px;
+  margin-bottom: 14px;
+}
+
+.control-grid .field {
+  grid-column: 1 / -1;
+  margin-bottom: 0;
+}
+
+.toggle-item {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 32px;
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 8px;
+  padding: 6px 8px;
+  background: rgba(248, 250, 252, 0.56);
+  color: #475569;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.control-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.action-button {
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 8px;
+  padding: 8px 11px;
+  background: rgba(255, 255, 255, 0.78);
+  color: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.action-button--primary {
+  border-color: rgba(37, 99, 235, 0.45);
+  background: #2563eb;
+  color: #fff;
+}
+
+.action-button:disabled {
+  opacity: 0.52;
+  cursor: not-allowed;
+}
+
+.progress-block {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 14px;
+}
+
+.progress-track {
+  height: 7px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(148, 163, 184, 0.22);
+}
+
+.progress-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: #2563eb;
+  transition: width 140ms ease;
+}
+
+.progress-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  color: #64748b;
+  font-size: 12px;
+}
+
+.dark .field select,
+.dark .sample-card,
+.dark .toggle-item,
+.dark .action-button {
+  background: rgba(38, 38, 38, 0.82);
+  border-color: rgba(82, 82, 82, 0.72);
+}
+
+.dark .action-button--primary {
+  border-color: rgba(96, 165, 250, 0.55);
+  background: #2563eb;
+  color: #fff;
+}
+
+.workspace-card textarea {
+  width: 100%;
+  min-height: 520px;
+  resize: vertical;
+  box-sizing: border-box;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 8px;
+  padding: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+.preview-surface {
+  min-height: 100%;
+}
+
+.thinking-node {
+  border: 1px solid rgba(14, 165, 233, 0.25);
+  border-radius: 10px;
+  padding: 12px;
+  background: rgba(14, 165, 233, 0.06);
+}
+
+.thinking-node__header {
+  font-size: 12px;
+  font-weight: 800;
+  color: #0284c7;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}

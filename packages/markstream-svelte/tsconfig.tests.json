@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.build.json",
+  "compilerOptions": {
+    "noEmit": true
+  },
+  "include": [
+    "src/external-module-shims.d.ts",
+    "test/**/*.ts"
+  ]
+}

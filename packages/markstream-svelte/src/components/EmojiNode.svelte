@@ -1,13 +1,9 @@
 <script lang="ts">
-  import type { SvelteRenderableNode } from './shared/node-helpers'
-  import { getString } from './shared/node-helpers'
+  import type { EmojiNode as ParserEmojiNode } from 'stream-markdown-parser'
+  import type { NodeProps } from '../types/componentProps'
 
-  interface Props {
-    node: SvelteRenderableNode;
-  }
+  let { node }: NodeProps<ParserEmojiNode> = $props()
 
-  let { node }: Props = $props();
-
-  let value = $derived(getString((node as any)?.raw || (node as any)?.markup || (node as any)?.content || (node as any)?.name));
+  let value = $derived(node.raw || node.markup || node.name)
 </script>
 <span class="emoji-node">{value}</span>

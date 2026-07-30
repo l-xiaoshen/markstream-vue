@@ -905,10 +905,10 @@ body > div[id^="dmermaid-"] {
 }
 
 .markstream-svelte .mermaid-header {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  display: flex;
   align-items: center;
-  gap: 0.75rem;
+  justify-content: space-between;
+  gap: 0;
   padding: var(--ms-inset-panel-y) var(--ms-inset-panel-x);
   border-bottom: 1px solid var(--diagram-border);
   background: var(--diagram-header-bg);
@@ -928,6 +928,7 @@ body > div[id^="dmermaid-"] {
 }
 
 .markstream-svelte .mermaid-header__title {
+  flex: 0 1 auto;
   min-width: 0;
   gap: 0.5rem;
   overflow: hidden;
@@ -960,12 +961,11 @@ body > div[id^="dmermaid-"] {
 }
 
 .markstream-svelte .mermaid-actions {
+  flex: 0 0 auto;
   display: flex;
   align-items: center;
   gap: var(--ms-gap-header-actions);
-  grid-column: 3;
   justify-content: flex-end;
-  justify-self: end;
 }
 
 .markstream-svelte .mermaid-action-btn,
@@ -1021,10 +1021,10 @@ body > div[id^="dmermaid-"] {
 }
 
 .markstream-svelte .mermaid-toggle {
+  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   gap: 0.125rem;
-  grid-column: 2;
   background: transparent;
 }
 
@@ -1033,7 +1033,7 @@ body > div[id^="dmermaid-"] {
   background: transparent;
   color: var(--code-action-fg);
   font:
-    500 var(--ms-text-label)/1 "IBM Plex Mono", "SFMono-Regular", Consolas, monospace;
+    500 var(--ms-text-label)/1 ui-sans-serif, system-ui, sans-serif;
   padding: 0.125rem 0.5rem;
   border-radius: 0.25rem;
   cursor: pointer;
@@ -1134,7 +1134,8 @@ body > div[id^="dmermaid-"] {
   border-top: 1px solid rgba(248, 113, 113, 0.25);
 }
 
-.markstream-svelte .mermaid-loading {
+.markstream-svelte .mermaid-loading,
+.markstream-svelte .rich-block-loading {
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -1144,11 +1145,14 @@ body > div[id^="dmermaid-"] {
 }
 
 .markstream-svelte.dark .mermaid-loading,
-.dark .markstream-svelte .mermaid-loading {
+.markstream-svelte.dark .rich-block-loading,
+.dark .markstream-svelte .mermaid-loading,
+.dark .markstream-svelte .rich-block-loading {
   color: rgba(226, 232, 240, 0.7);
 }
 
-.markstream-svelte .mermaid-spinner {
+.markstream-svelte .mermaid-spinner,
+.markstream-svelte .rich-block-spinner {
   width: 0.85rem;
   height: 0.85rem;
   border-radius: 9999px;
@@ -1168,29 +1172,30 @@ body > div[id^="dmermaid-"] {
 }
 
 .markstream-svelte .markstream-svelte-enhanced-block__header {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  display: flex;
   align-items: center;
-  gap: 0.75rem;
+  justify-content: space-between;
+  gap: 0;
   padding: var(--ms-inset-panel-y) var(--ms-inset-panel-x);
   border-bottom: 1px solid var(--diagram-border);
   background: var(--diagram-header-bg);
 }
 
 .markstream-svelte .markstream-svelte-enhanced-block__actions {
+  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  justify-self: end;
-  grid-column: 3;
   gap: var(--ms-gap-header-actions);
 }
 
 .markstream-svelte .markstream-svelte-enhanced-block__title {
+  flex: 0 1 auto;
   display: inline-flex;
   align-items: center;
   min-width: 0;
   gap: 0.5rem;
+  overflow: hidden;
 }
 
 .markstream-svelte .markstream-svelte-enhanced-block__title-icon {
@@ -1230,6 +1235,10 @@ body > div[id^="dmermaid-"] {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
+}
+
+.markstream-svelte .mode-btn {
+  font-family: ui-sans-serif, system-ui, sans-serif;
 }
 
 .markstream-svelte .markstream-svelte-enhanced-block__action--icon {
@@ -1328,10 +1337,10 @@ body > div[id^="dmermaid-"] {
 }
 
 .markstream-svelte .infographic-mode-toggle {
+  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   gap: 0.125rem;
-  grid-column: 2;
   background: transparent;
 }
 
@@ -1923,10 +1932,12 @@ body > div[id^="dmermaid-"] {
 }
 
 .markstream-svelte .d2-header-title {
+  flex: 0 1 auto;
   display: inline-flex;
   align-items: center;
   min-width: 0;
   gap: 0.5rem;
+  overflow: hidden;
 }
 
 .markstream-svelte .d2-label {
@@ -2024,7 +2035,8 @@ body > div[id^="dmermaid-"] {
   margin: 0 auto;
 }
 
-.markstream-svelte .d2-error {
+.markstream-svelte .d2-error,
+.markstream-svelte .rich-block-error {
   color: #dc2626;
   margin-top: 0.75rem;
 }
